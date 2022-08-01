@@ -92,8 +92,6 @@ public class EFSMetadataHandler
     public ListSchemasResponse doListSchemaNames(BlockAllocator allocator, ListSchemasRequest request)
     {
         logger.info("doListSchemaNames: enter - " + request);
-        System.out.println("here");
-        System.out.println( "logging");
         Set<String> combinedSchemas = new LinkedHashSet<>();
         if (glueClient != null) {
             try {
@@ -105,14 +103,11 @@ public class EFSMetadataHandler
                 throw new RuntimeException(e);
             }
         }
-        System.out.println("HEREHERE");
-        System.out.println(request.getCatalogName());
+        System.out.println("SCHEMAAS");
         System.out.println(combinedSchemas);
-
         combinedSchemas.add(DEFAULT_SCHEMA);
         return new ListSchemasResponse(request.getCatalogName(), combinedSchemas);
     }
-
 
     @Override
     public ListTablesResponse doListTables(BlockAllocator allocator, ListTablesRequest request) {
@@ -129,6 +124,8 @@ public class EFSMetadataHandler
                 logger.warn("doListTables: Unable to retrieve tables from AWSGlue in database/schema {}", request.getSchemaName(), e);
             }
         }
+        System.out.println("COMBINED TABLES");
+        System.out.println(combinedTables);
         return new ListTablesResponse(request.getCatalogName(), new ArrayList<>(combinedTables), null);
     }
 
@@ -150,6 +147,10 @@ public class EFSMetadataHandler
                 throw new RuntimeException(e);
             }
         }
+        System.out.println("getCustomMetadata");
+        System.out.println(schema.getCustomMetadata());
+        System.out.println("FIELDS");
+        System.out.println(schema.getFields());
 
         Set<String> partitionColNames = new HashSet<String>();
         for (int i = 0; i < schema.getFields().size(); i++) {
@@ -166,13 +167,15 @@ public class EFSMetadataHandler
     }
 
     @Override
-    public void getPartitions(BlockWriter blockWriter, GetTableLayoutRequest request, QueryStatusChecker queryStatusChecker) {
+    public void getPartitions(BlockWriter blockWriter, GetTableLayoutRequest request, QueryStatusChecker queryStatusChecker) throws Exception {
+        System.out.println("SUPER PARTITIONS");
         String tableName = getSourceTableName(request.getSchema());
         if (tableName == null) {
             tableName = request.getTableName().getTableName();
         }
         Set<String> partitionCols = request.getPartitionCols();
         Iterator<String> itr = partitionCols.iterator();
+        System.out.println("PARTITIONCOLS: " + partitionCols);
 
         blockWriter.writeRows((Block block, int row) -> {
             boolean matched = true;

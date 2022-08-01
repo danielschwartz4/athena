@@ -77,7 +77,7 @@ class EFSTypeUtils
      * @param field is used to determine which extractor to generate based on the field type.
      * @return a field extractor.
      */
-    protected Extractor makeExtractor(Field field)
+    protected Extractor makeExtractor(Field field, int index)
     {
         Types.MinorType fieldType = Types.getMinorTypeForArrowType(field.getType());
 
@@ -87,7 +87,7 @@ class EFSTypeUtils
             case BIGINT:
                 return makeBigIntExtractor(field);
             case INT:
-                return makeIntExtractor(field);
+                return this.makeIntExtractor(field, index);
             case SMALLINT:
                 return makeSmallIntExtractor(field);
             case TINYINT:
@@ -134,6 +134,18 @@ class EFSTypeUtils
             }
         };
     }
+//    private Extractor makeVarCharExtractor(Field field, int index) {
+//        return (context, dst) -> {
+//            String fieldValue = String.valueOf(((String[]) context)[index]);
+//            dst.isSet = 1;
+//            if (fieldValue instanceof String) {
+//                dst.value = fieldValue;
+//            } else {
+//                dst.isSet = 0;
+//            }
+//
+//        };
+//    }
 
     /**
      * Create a BIGINT field extractor to extract a long value from a Document. The Document value can be returned
@@ -200,35 +212,47 @@ class EFSTypeUtils
      * @param field is used to determine which extractor to generate based on the field type.
      * @return a field extractor.
      */
-    private Extractor makeIntExtractor(Field field)
+    private Extractor makeIntExtractor(Field field, int index)
     {
         return (IntExtractor) (Object context, NullableIntHolder dst) ->
         {
-            Object fieldValue = ((Map) context).get(field.getName());
+//            Object fieldValue = ((Map) context).get(field.getName());
+            Integer fieldValue = Integer.parseInt(((String[]) context)[index]);
             dst.isSet = 1;
             if (fieldValue instanceof Number) {
                 dst.value = ((Number) fieldValue).intValue();
             }
-            else if (fieldValue instanceof String) {
-                dst.value = new Double((String) fieldValue).intValue();
-            }
-            else if (fieldValue instanceof List) {
-                Object value = ((List) fieldValue).get(0);
-                if (value instanceof Number) {
-                    dst.value = ((Number) value).intValue();
-                }
-                else if (value instanceof String) {
-                    dst.value = new Double((String) value).intValue();
-                }
-                else {
-                    dst.isSet = 0;
-                }
-            }
+//            else if (fieldValue instanceof String) {
+//                dst.value = new Double((String) fieldValue).intValue();
+//            }
+//            else if (fieldValue instanceof List) {
+//                Object value = ((List) fieldValue).get(0);
+//                if (value instanceof Number) {
+//                    dst.value = ((Number) value).intValue();
+//                }
+//                else if (value instanceof String) {
+//                    dst.value = new Double((String) value).intValue();
+//                }
+//                else {
+//                    dst.isSet = 0;
+//                }
+//            }
             else {
                 dst.isSet = 0;
             }
         };
     }
+//    private Extractor makeIntExtractor(Field field, int index) {
+//        return (context, dst) -> {
+//            Integer fieldValue = Integer.parseInt(((String[]) context)[index]);
+//            dst.isSet = 1;
+//            if (fieldValue instanceof Number) {
+//                dst.value = fieldValue;
+//            } else {
+//                dst.isSet = 0;
+//            }
+//        };
+//    }
 
     /**
      * Create an SMALLINT field extractor to extract a short value from a Document. The Document value can be returned

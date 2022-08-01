@@ -21,7 +21,6 @@
 // Source code recreated from a .class file by IntelliJ IDEA
 // (powered by FernFlower decompiler)
 //
-
 package com.amazonaws.athena.connectors.efs;
 
 import com.amazonaws.athena.connector.lambda.QueryStatusChecker;
@@ -83,9 +82,10 @@ public class EFSRecordHandler extends RecordHandler {
         System.out.println("partitionValues: " + partitionValues);
         int index = 0;
 
-        for (Field next: recordsRequest.getSchema().getFields()) {
-//            Extractor extractor = this.typeUtils.makeExtractor(next, index);
-            Extractor extractor = typeUtils.makeExtractor(next);
+//        for (Field next: recordsRequest.getSchema().getFields()) {
+        for(Iterator var10 = recordsRequest.getSchema().getFields().iterator(); var10.hasNext(); ++index) {
+            Field next = (Field)var10.next();
+            Extractor extractor = typeUtils.makeExtractor(next, index);
 
             if (extractor != null) {
                 builder.withExtractor(next.getName(), extractor);
@@ -97,16 +97,19 @@ public class EFSRecordHandler extends RecordHandler {
                 .map(Path::toString)
                 .collect(Collectors.toSet());
 
+        System.out.println(directories);
+
         GeneratedRowWriter rowWriter = builder.build();
         Iterator dirIter = directories.iterator();
 
         while(dirIter.hasNext()) {
             Object dir = dirIter.next();
+            System.out.println(dir);
             String d = dir.toString();
             String e = System.getenv("INPUT_TABLE");
             String tmpDirPathString;
             if (Objects.equals(dir.toString(), System.getenv("INPUT_TABLE"))) {
-                tmpDirPathString = "" + tablePath + "/";
+                continue;
             } else {
                 tmpDirPathString = "" + tablePath + "/" + dir;
             }
@@ -121,6 +124,7 @@ public class EFSRecordHandler extends RecordHandler {
 
             while(fileIter.hasNext()) {
                 Object file = fileIter.next();
+                System.out.println(file);
                 Path tmpFilePath = Paths.get("/" + tmpDirPathString + "/" + file.toString());
                 BufferedReader bufferedReader = Files.newBufferedReader(tmpFilePath, charset);
 
