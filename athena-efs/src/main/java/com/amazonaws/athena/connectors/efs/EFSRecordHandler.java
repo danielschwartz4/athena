@@ -79,7 +79,6 @@ public class EFSRecordHandler extends RecordHandler {
         Path tablePath = Paths.get(System.getenv("EFS_PATH") + "/" + System.getenv("INPUT_TABLE"));
         GeneratedRowWriter.RowWriterBuilder builder = GeneratedRowWriter.newBuilder(recordsRequest.getConstraints());
         Map<String, String> partitionValues = recordsRequest.getSplit().getProperties();
-        System.out.println("partitionValues: " + partitionValues);
         int index = 0;
 
 //        for (Field next: recordsRequest.getSchema().getFields()) {
@@ -97,14 +96,11 @@ public class EFSRecordHandler extends RecordHandler {
                 .map(Path::toString)
                 .collect(Collectors.toSet());
 
-        System.out.println(directories);
-
         GeneratedRowWriter rowWriter = builder.build();
         Iterator dirIter = directories.iterator();
 
         while(dirIter.hasNext()) {
             Object dir = dirIter.next();
-            System.out.println(dir);
             String d = dir.toString();
             String e = System.getenv("INPUT_TABLE");
             String tmpDirPathString;
@@ -124,7 +120,6 @@ public class EFSRecordHandler extends RecordHandler {
 
             while(fileIter.hasNext()) {
                 Object file = fileIter.next();
-                System.out.println(file);
                 Path tmpFilePath = Paths.get("/" + tmpDirPathString + "/" + file.toString());
                 BufferedReader bufferedReader = Files.newBufferedReader(tmpFilePath, charset);
 

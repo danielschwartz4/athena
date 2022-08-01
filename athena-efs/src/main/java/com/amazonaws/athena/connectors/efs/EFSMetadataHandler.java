@@ -47,12 +47,9 @@ import com.amazonaws.services.glue.AWSGlue;
 import com.amazonaws.services.glue.model.Database;
 import com.amazonaws.services.glue.model.Table;
 import com.amazonaws.services.secretsmanager.AWSSecretsManager;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+
+import java.util.*;
+
 import org.apache.arrow.util.VisibleForTesting;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.slf4j.Logger;
@@ -124,8 +121,6 @@ public class EFSMetadataHandler
                 logger.warn("doListTables: Unable to retrieve tables from AWSGlue in database/schema {}", request.getSchemaName(), e);
             }
         }
-        System.out.println("COMBINED TABLES");
-        System.out.println(combinedTables);
         return new ListTablesResponse(request.getCatalogName(), new ArrayList<>(combinedTables), null);
     }
 
@@ -133,10 +128,14 @@ public class EFSMetadataHandler
     public GetTableResponse doGetTable(BlockAllocator allocator, GetTableRequest request) throws Exception {
         logger.info("doGetTable: enter - " + request);
         Schema schema = null;
+        Set<String> partitionColNames = Collections.emptySet();
 
         if (glueClient != null) {
             try {
-                schema = super.doGetTable(allocator, request).getSchema();
+                GetTableResponse table = super.doGetTable(allocator, request);
+                schema = table.getSchema();
+                System.out.println("Partition columns in doGetTable");
+                partitionColNames = table.getPartitionColumns();
             }
             catch (RuntimeException e) {
                 logger.warn("doGetTable: Unable to retrieve table {} from AWSGlue in database/schema {}. " +
@@ -147,35 +146,24 @@ public class EFSMetadataHandler
                 throw new RuntimeException(e);
             }
         }
-        System.out.println("getCustomMetadata");
-        System.out.println(schema.getCustomMetadata());
-        System.out.println("FIELDS");
-        System.out.println(schema.getFields());
-
-        Set<String> partitionColNames = new HashSet<String>();
-        for (int i = 0; i < schema.getFields().size(); i++) {
-            String name = schema.getFields().get(i).getName();
-            partitionColNames.add(name);
-        }
 
         //        If glue not present, infer schema
         //        ...
 
         return new GetTableResponse(request.getCatalogName(),
                 request.getTableName(),
-                (schema == null) ? SchemaBuilder.newBuilder().build() : schema, partitionColNames);
+                (schema == null) ? SchemaBuilder.newBuilder().build() : schema,
+                partitionColNames);
     }
 
     @Override
     public void getPartitions(BlockWriter blockWriter, GetTableLayoutRequest request, QueryStatusChecker queryStatusChecker) throws Exception {
-        System.out.println("SUPER PARTITIONS");
         String tableName = getSourceTableName(request.getSchema());
         if (tableName == null) {
             tableName = request.getTableName().getTableName();
         }
         Set<String> partitionCols = request.getPartitionCols();
         Iterator<String> itr = partitionCols.iterator();
-        System.out.println("PARTITIONCOLS: " + partitionCols);
 
         blockWriter.writeRows((Block block, int row) -> {
             boolean matched = true;
