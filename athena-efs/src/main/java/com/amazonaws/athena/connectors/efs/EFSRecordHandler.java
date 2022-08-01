@@ -81,7 +81,6 @@ public class EFSRecordHandler extends RecordHandler {
         Map<String, String> partitionValues = recordsRequest.getSplit().getProperties();
         int index = 0;
 
-//        for (Field next: recordsRequest.getSchema().getFields()) {
         for(Iterator var10 = recordsRequest.getSchema().getFields().iterator(); var10.hasNext(); ++index) {
             Field next = (Field)var10.next();
             Extractor extractor = typeUtils.makeExtractor(next, index);

@@ -66,10 +66,12 @@ public class EFSMetadataHandler
     private static final TableFilter TABLE_FILTER = (Table table) -> 2 == 2 ;
     private final AWSGlue glueClient;
     public static final String DEFAULT_SCHEMA = "default";
+    private EFSPathUtils efsPathUtils;
     public EFSMetadataHandler()
     {
         super(false, SOURCE_TYPE);
         this.glueClient = getAwsGlue();
+        this.efsPathUtils = new EFSPathUtils();
     }
 
 
@@ -134,7 +136,6 @@ public class EFSMetadataHandler
             try {
                 GetTableResponse table = super.doGetTable(allocator, request);
                 schema = table.getSchema();
-                System.out.println("Partition columns in doGetTable");
                 partitionColNames = table.getPartitionColumns();
             }
             catch (RuntimeException e) {
@@ -163,19 +164,31 @@ public class EFSMetadataHandler
             tableName = request.getTableName().getTableName();
         }
         Set<String> partitionCols = request.getPartitionCols();
-        Iterator<String> itr = partitionCols.iterator();
-
-        blockWriter.writeRows((Block block, int row) -> {
-            boolean matched = true;
-            int i = 0;
-            while(itr.hasNext()) {
-                String val = itr.next();
-                System.out.println("VAL: " + val);
-                matched &= block.setValue(val, row, partitionCols.size() - i);
-                i++;
+        Set<String> directories = efsPathUtils.getDirectories();
+        System.out.println("DIRECTORIES");
+        System.out.println(directories);
+        System.out.println("PCOLS");
+        System.out.println(partitionCols);
+        for (String dir : directories) {
+            if (Objects.equals(dir, System.getenv("INPUT_TABLE"))) {
+                continue;
+            } else {
+                String[] dirParts = dir.split("=");
+                String col = dirParts[0];
+//              Get type from fields in the future
+                int val = Integer.parseInt(dirParts[1]);
+                blockWriter.writeRows((Block block, int row) -> {
+                    boolean matched = true;
+                    if (partitionCols.contains(col)) {
+                        System.out.println("pcols contains dirval: " + val);
+                        System.out.println("col: " + col + " row: " + row + " val: " + val);
+                        matched &= block.setValue(col, row, val);
+                    }
+                    return 1;
+//                    return matched ? 1 : 0;
+                });
             }
-            return matched ? 1 : 0;
-        });
+        }
     }
 
     @Override

@@ -65,12 +65,6 @@ import java.util.Map;
 class EFSTypeUtils
 {
     private static final Logger logger = LoggerFactory.getLogger(EFSTypeUtils.class);
-//    private final EFSFieldResolver fieldResolver;
-
-//    protected ElasticsearchTypeUtils()
-//    {
-//        this.fieldResolver = new EFSFieldResolver();
-//    }
 
     /**
      * Create the appropriate field extractor used for extracting field values from a Document based on the field type.
