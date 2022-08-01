@@ -1,0 +1,172 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: AthenaEFSConnector
+    Description: This connector enables Amazon Athena to communicate with Amazon EFS.
+    Author: default author
+    SpdxLicenseId: Apache-2.0
+    LicenseUrl: s3://athena-efs/f2192c03aa492ef2104991bb8be53aba
+    ReadmeUrl: s3://athena-efs/a117a0a63c964ea7238c9291d8373a7c
+    Labels:
+    - athena-federation
+    HomePageUrl: https://github.com/awslabs/aws-athena-query-federation
+    SemanticVersion: 2022.23.1
+    SourceCodeUrl: https://github.com/awslabs/aws-athena-query-federation
+Parameters:
+  LambdaFunctionName:
+    Description: The name you will give to this catalog in Athena. It will also be
+      used as the function name. This name must satisfy the pattern ^[a-z0-9-_]{1,64}$
+    Type: String
+    AllowedPattern: ^[a-z0-9-_]{1,64}$
+  DefaultConnectionString:
+    Description: 'The default connection string is used when catalog is "lambda:${LambdaFunctionName}".
+      Catalog specific Connection Strings can be added later. Format: ${DatabaseType}://${NativeJdbcConnectionString}.'
+    Type: String
+  SecretNamePrefix:
+    Description: Used to create resource-based authorization policy for "secretsmanager:GetSecretValue"
+      action. E.g. All Athena MySQL Federation secret names can be prefixed with "AthenaMySQLFederation"
+      and authorization policy will allow "arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:AthenaJdbcFederation*".
+      Parameter value in this case should be "AthenaMySQLFederation". If you do not
+      have a prefix, you can manually update the IAM policy to add allow any secret
+      names.
+    Type: String
+  SpillBucket:
+    Description: The name of the bucket where this function can spill data.
+    Type: String
+  SpillPrefix:
+    Description: The prefix within SpillBucket where this function can spill data.
+    Type: String
+    Default: athena-spill
+  LambdaTimeout:
+    Description: Maximum Lambda invocation runtime in seconds. (min 1 - 900 max)
+    Default: 900
+    Type: Number
+  LambdaMemory:
+    Description: Lambda memory in MB (min 128 - 3008 max).
+    Default: 3008
+    Type: Number
+  DisableSpillEncryption:
+    Description: If set to 'false' data spilled to S3 is encrypted with AES GCM
+    Default: 'false'
+    Type: String
+  SecurityGroupIds:
+    Description: One or more SecurityGroup IDs corresponding to the SecurityGroup
+      that should be applied to the Lambda function. (e.g. sg1,sg2,sg3)
+    Type: List<AWS::EC2::SecurityGroup::Id>
+  SubnetIds:
+    Description: One or more Subnet IDs corresponding to the Subnet that the Lambda
+      function can use to access you data source. (e.g. subnet1,subnet2)
+    Type: List<AWS::EC2::Subnet::Id>
+  InputFile:
+    Description: 'The file that you would like to query from '
+    Type: String
+  InputTable:
+    Description: 'The table that you would like to query from '
+    Type: String
+  EFSpath:
+    Description: The path of your EFS file system
+    Type: String
+    Default: /mnt/efs
+  AccessPointARN:
+    Type: String
+    Description: Access point ARN
+Resources:
+  AthenaEFSFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Environment:
+        Variables:
+          INPUT_FILE:
+            Ref: InputFile
+          INPUT_TABLE:
+            Ref: InputTable
+          EFS_PATH:
+            Ref: EFSpath
+          disable_spill_encryption:
+            Ref: DisableSpillEncryption
+          spill_bucket:
+            Ref: SpillBucket
+          spill_prefix:
+            Ref: SpillPrefix
+      CodeUri: s3://athena-efs/c62038fccc59aed1a8ff5f8b29325d6a
+      Description: Enables Amazon Athena to communicate with Amazon EFS
+      Timeout: 300
+      MemorySize: 2048
+      Handler: com.amazonaws.athena.connectors.efs.EFSCompositeHandler
+      Runtime: java11
+      VpcConfig:
+        SecurityGroupIds:
+          Ref: SecurityGroupIds
+        SubnetIds:
+          Ref: SubnetIds
+      FileSystemConfigs:
+      - Arn:
+          Ref: AccessPointARN
+        LocalMountPath:
+          Ref: EFSpath
+      Policies:
+      - Statement:
+        - Action:
+          - secretsmanager:GetSecretValue
+          Effect: Allow
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:secretsmanager:${AWS::Region}:${AWS::AccountId}:secret:${SecretNamePrefix}*
+        Version: '2012-10-17'
+      - Statement:
+        - Action:
+          - logs:CreateLogGroup
+          Effect: Allow
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*
+        Version: '2012-10-17'
+      - Statement:
+        - Action:
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          Effect: Allow
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/lambda/${LambdaFunctionName}:*
+        Version: '2012-10-17'
+      - Statement:
+        - Action:
+          - athena:GetQueryExecution
+          - s3:ListAllMyBuckets
+          Effect: Allow
+          Resource: '*'
+        Version: '2012-10-17'
+      - Statement:
+        - Action:
+          - glue:GetTableVersions
+          - glue:GetPartitions
+          - glue:GetTables
+          - glue:GetTableVersion
+          - glue:GetDatabases
+          - glue:GetTable
+          - glue:GetPartition
+          - glue:GetDatabase
+          - glue:GetSchema
+          - glue:GetRegistry
+          - athena:GetQueryExecution
+          - s3:ListAllMyBuckets
+          Effect: Allow
+          Resource: '*'
+      - Statement:
+        - Sid: AWSLambdaVPCAccessExecutionRole
+          Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          - ec2:CreateNetworkInterface
+          - ec2:DescribeNetworkInterfaces
+          - ec2:DeleteNetworkInterface
+          Resource: '*'
+        - Sid: AmazonElasticFileSystemClientFullAccess
+          Effect: Allow
+          Action:
+          - elasticfilesystem:ClientMount
+          - elasticfilesystem:ClientRootAccess
+          - elasticfilesystem:ClientWrite
+          - elasticfilesystem:DescribeMountTargets
+          Resource: '*'

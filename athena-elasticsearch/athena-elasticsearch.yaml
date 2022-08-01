@@ -137,6 +137,5 @@ Resources:
           SubnetIds:
             !If
               - IsVPCAccessSelected
-              -
                 !Ref SubnetIds
               - !Ref "AWS::NoValue"

@@ -1,0 +1,13 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "athena-efs2"
+s3_bucket = "aws-sam-cli-managed-default-samclisourcebucket-c3dehus3vqcu"
+s3_prefix = "athena-efs2"
+region = "us-east-1"
+confirm_changeset = true
+capabilities = "CAPABILITY_IAM"
+disable_rollback = true
+parameter_overrides = "LambdaFunctionName=\"athena-efs\" DefaultConnectionString=\"athena-efs\" SecretNamePrefix=\"secret\" SpillBucket=\"athena-efs\" SpillPrefix=\"athena-spill\" LambdaTimeout=\"900\" LambdaMemory=\"3008\" DisableSpillEncryption=\"false\" SecurityGroupIds=\"sg-093fd39915e78f6e1\" SubnetIds=\"subnet-03f6606077c039e4f, subnet-00f10b75321e154b5, subnet-054bd4c3c393297cb\" InputFile=\"test.csv\" InputTable=\"nopartable\" EFSpath=\"/mnt/efs\" AccessPointARN=\"arn:aws:elasticfilesystem:us-east-1:917477211190:access-point/fsap-00b2e7a3316918923\""
+image_repositories = []
