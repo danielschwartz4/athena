@@ -165,10 +165,6 @@ public class EFSMetadataHandler
         }
         Set<String> partitionCols = request.getPartitionCols();
         Set<String> directories = efsPathUtils.getDirectories();
-        System.out.println("DIRECTORIES");
-        System.out.println(directories);
-        System.out.println("PCOLS");
-        System.out.println(partitionCols);
         for (String dir : directories) {
             if (Objects.equals(dir, System.getenv("INPUT_TABLE"))) {
                 continue;
@@ -180,12 +176,9 @@ public class EFSMetadataHandler
                 blockWriter.writeRows((Block block, int row) -> {
                     boolean matched = true;
                     if (partitionCols.contains(col)) {
-                        System.out.println("pcols contains dirval: " + val);
-                        System.out.println("col: " + col + " row: " + row + " val: " + val);
                         matched &= block.setValue(col, row, val);
                     }
-                    return 1;
-//                    return matched ? 1 : 0;
+                    return matched ? 1 : 0;
                 });
             }
         }
@@ -197,12 +190,24 @@ public class EFSMetadataHandler
         String catalogName = request.getCatalogName();
         Set<Split> splits = new HashSet();
         Block partitions = request.getPartitions();
-        Map<String, String> partitionMetadata = partitions.getSchema().getCustomMetadata();
+        System.out.println("SPLITS PARTITIONS: " + partitions);
+//        Added this
+        Map<String, String> partitionMetadata = partitions.getMetaData();
+        System.out.println("SPLITS partitionMetadata: " + partitionMetadata);
+
+        System.out.println("SPLITS fieldReader(day): " + partitions.getFieldReader("day").);
+
         Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
         if (partitions.toString() != "{}") {
+            System.out.println("in splits condition");
             Split split = splitBuilder.build();
+            Map<String, String> p = split.getProperties();
+            System.out.println("properties: " + p);
+            System.out.println("property values: " + p.values());
+
             splits.add(split);
         }
+
 
         logger.info("doGetSplits: exit - " + splits.size());
         return new GetSplitsResponse(catalogName, splits);

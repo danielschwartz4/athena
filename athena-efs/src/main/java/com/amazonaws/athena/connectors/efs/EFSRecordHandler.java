@@ -44,10 +44,7 @@ import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import org.apache.arrow.util.VisibleForTesting;
 import org.apache.arrow.vector.types.pojo.Field;
@@ -75,10 +72,14 @@ public class EFSRecordHandler extends RecordHandler {
     @Override
     protected void readWithConstraint(BlockSpiller spiller, ReadRecordsRequest recordsRequest, QueryStatusChecker queryStatusChecker) throws IOException {
         Split split = recordsRequest.getSplit();
+        System.out.println("SPLIT IN readWithConstraint");
+        System.out.println(split);
         Charset charset = StandardCharsets.UTF_8;
         Path tablePath = Paths.get(System.getenv("EFS_PATH") + "/" + System.getenv("INPUT_TABLE"));
         GeneratedRowWriter.RowWriterBuilder builder = GeneratedRowWriter.newBuilder(recordsRequest.getConstraints());
         Map<String, String> partitionValues = recordsRequest.getSplit().getProperties();
+        System.out.println("partitionValues in readWithConstraint");
+        System.out.println(partitionValues);
         int index = 0;
 
         for(Iterator var10 = recordsRequest.getSchema().getFields().iterator(); var10.hasNext(); ++index) {
@@ -125,6 +126,9 @@ public class EFSRecordHandler extends RecordHandler {
                 String line;
                 while((line = bufferedReader.readLine()) != null) {
                     String[] lineParts = line.split(",");
+                    System.out.println("LINEPARTS");
+                    System.out.println(lineParts[0] + " " +  lineParts[1] + " " +  lineParts[2]);
+
                     spiller.writeRows((block, rowNum) -> {
                         return rowWriter.writeRow(block, rowNum, lineParts) ? 1 : 0;
                     });
