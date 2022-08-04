@@ -29,6 +29,8 @@ import com.amazonaws.athena.connector.lambda.data.Block;
 import com.amazonaws.athena.connector.lambda.data.BlockAllocator;
 import com.amazonaws.athena.connector.lambda.data.BlockWriter;
 import com.amazonaws.athena.connector.lambda.data.SchemaBuilder;
+import com.amazonaws.athena.connector.lambda.data.projectors.ArrowValueProjectorImpl;
+import com.amazonaws.athena.connector.lambda.data.writers.extractors.Extractor;
 import com.amazonaws.athena.connector.lambda.domain.Split;
 import com.amazonaws.athena.connector.lambda.domain.TableName;
 import com.amazonaws.athena.connector.lambda.domain.spill.SpillLocation;
@@ -55,8 +57,10 @@ import java.util.*;
 import org.apache.arrow.util.VisibleForTesting;
 import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.complex.reader.FieldReader;
+import org.apache.arrow.vector.types.Types;
 import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
+import org.apache.arrow.vector.util.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,11 +76,15 @@ public class EFSMetadataHandler
     private final AWSGlue glueClient;
     public static final String DEFAULT_SCHEMA = "default";
     private EFSPathUtils efsPathUtils;
+
+    private EFSValueReaderTypes valueReaderTypes;
+
     public EFSMetadataHandler()
     {
         super(false, SOURCE_TYPE);
         this.glueClient = getAwsGlue();
         this.efsPathUtils = new EFSPathUtils();
+        this.valueReaderTypes = new EFSValueReaderTypes();
     }
 
 
@@ -90,6 +98,7 @@ public class EFSMetadataHandler
     {
         super(glueClient, keyFactory, awsSecretsManager, athena, SOURCE_TYPE, spillBucket, spillPrefix);
         this.glueClient = glueClient;
+        this.valueReaderTypes = new EFSValueReaderTypes();
     }
 
     @Override
@@ -194,7 +203,6 @@ public class EFSMetadataHandler
         Set<Split> splits = new HashSet();
         Block partitions = request.getPartitions();
         List<FieldReader> fieldReaders = partitions.getFieldReaders();
-        System.out.println("SPLITS PARTITIONS: " + partitions);
 
         for (FieldReader locationReader : fieldReaders) {
             int rowCount = partitions.getRowCount();
@@ -202,16 +210,16 @@ public class EFSMetadataHandler
                 Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
                 locationReader.setPosition(i);
                 String fieldName = locationReader.getField().getName();
-                int val = locationReader.readInteger();
-                System.out.println("fieldName: " + fieldName);
-                System.out.println("val: " + val);
-                splitBuilder.add(fieldName, String.valueOf(val));
+//                Types
+
+                String val = valueReaderTypes.convertType(locationReader);
+//                int val = locationReader.readInteger();
+
+                splitBuilder.add(fieldName, val);
                 Split split = splitBuilder.build();
-                System.out.println("split: " + split);
                 splits.add(split);
             }
         }
-        System.out.println("splits2: " + splits);
 
         logger.info("doGetSplits: exit - " + splits.size());
         return new GetSplitsResponse(catalogName, splits);

@@ -54,34 +54,32 @@ import org.slf4j.LoggerFactory;
 public class EFSRecordHandler extends RecordHandler {
     private static final Logger logger = LoggerFactory.getLogger(EFSRecordHandler.class);
     private static final String SOURCE_TYPE = "efs";
-    private EFSTypeUtils typeUtils;
+    private EFSExtractorTypeUtils typeUtils;
     private AmazonS3 amazonS3;
 
     public EFSRecordHandler() {
         this(AmazonS3ClientBuilder.defaultClient(), AWSSecretsManagerClientBuilder.defaultClient(), AmazonAthenaClientBuilder.defaultClient());
-        this.typeUtils = new EFSTypeUtils();
+        this.typeUtils = new EFSExtractorTypeUtils();
     }
 
     @VisibleForTesting
     protected EFSRecordHandler(AmazonS3 amazonS3, AWSSecretsManager secretsManager, AmazonAthena amazonAthena) {
         super(amazonS3, secretsManager, amazonAthena, "efs");
         this.amazonS3 = amazonS3;
-        this.typeUtils = new EFSTypeUtils();
+        this.typeUtils = new EFSExtractorTypeUtils();
     }
 
     @Override
     protected void readWithConstraint(BlockSpiller spiller, ReadRecordsRequest recordsRequest, QueryStatusChecker queryStatusChecker) throws IOException {
         Split split = recordsRequest.getSplit();
         Charset charset = StandardCharsets.UTF_8;
-        Path tablePath = Paths.get(System.getenv("EFS_PATH") + "/" + System.getenv("INPUT_TABLE"));
         GeneratedRowWriter.RowWriterBuilder builder = GeneratedRowWriter.newBuilder(recordsRequest.getConstraints());
         Map<String, String> partitionValues = split.getProperties();
-        System.out.println("partitionValues in readWithConstraint");
-        System.out.println(partitionValues);
-        System.out.println(partitionValues.values());
-        System.out.println(partitionValues.get("day"));
-        System.out.println(partitionValues.entrySet());
-        System.out.println(partitionValues.keySet());
+
+        Path path = Paths.get(System.getenv("EFS_PATH") + "/"
+                + System.getenv("INPUT_TABLE")
+                + "/" + partitionValues.entrySet().toArray()[0]);
+
 
         int index = 0;
 
@@ -95,7 +93,7 @@ public class EFSRecordHandler extends RecordHandler {
             }
         }
 
-        Set<String> directories = Files.walk(tablePath).filter(dir -> Files.isDirectory(dir))
+        Set<String> directories = Files.walk(path).filter(dir -> Files.isDirectory(dir))
                 .map(Path::getFileName)
                 .map(Path::toString)
                 .collect(Collectors.toSet());
@@ -110,7 +108,9 @@ public class EFSRecordHandler extends RecordHandler {
             if (Objects.equals(dir.toString(), table)) {
                 continue;
             } else {
-                tmpDirPathString = "" + tablePath + "/" + dir;
+//                tmpDirPathString = "" + tablePath + "/" + dir;
+                tmpDirPathString = "" + path + "/" ;
+
             }
 
             Path tmpDirPath = Paths.get(tmpDirPathString);

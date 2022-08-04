@@ -19,7 +19,6 @@
  */
 package com.amazonaws.athena.connectors.efs;
 
-import com.amazonaws.athena.connector.lambda.data.BlockUtils;
 import com.amazonaws.athena.connector.lambda.data.writers.extractors.BigIntExtractor;
 import com.amazonaws.athena.connector.lambda.data.writers.extractors.BitExtractor;
 import com.amazonaws.athena.connector.lambda.data.writers.extractors.DateMilliExtractor;
@@ -30,11 +29,7 @@ import com.amazonaws.athena.connector.lambda.data.writers.extractors.IntExtracto
 import com.amazonaws.athena.connector.lambda.data.writers.extractors.SmallIntExtractor;
 import com.amazonaws.athena.connector.lambda.data.writers.extractors.TinyIntExtractor;
 import com.amazonaws.athena.connector.lambda.data.writers.extractors.VarCharExtractor;
-import com.amazonaws.athena.connector.lambda.data.writers.fieldwriters.FieldWriter;
-import com.amazonaws.athena.connector.lambda.data.writers.fieldwriters.FieldWriterFactory;
 import com.amazonaws.athena.connector.lambda.data.writers.holders.NullableVarCharHolder;
-import com.amazonaws.athena.connector.lambda.domain.predicate.ConstraintProjector;
-import org.apache.arrow.vector.FieldVector;
 import org.apache.arrow.vector.holders.NullableBigIntHolder;
 import org.apache.arrow.vector.holders.NullableBitHolder;
 import org.apache.arrow.vector.holders.NullableDateMilliHolder;
@@ -62,9 +57,9 @@ import java.util.Map;
  * This class has interfaces used for document field-values extraction after they are retrieved from an Elasticsearch
  * instance. This includes field extractors and field writer factories using the field extractor framework.
  */
-class EFSTypeUtils
+class EFSExtractorTypeUtils
 {
-    private static final Logger logger = LoggerFactory.getLogger(EFSTypeUtils.class);
+    private static final Logger logger = LoggerFactory.getLogger(EFSExtractorTypeUtils.class);
 
     /**
      * Create the appropriate field extractor used for extracting field values from a Document based on the field type.
