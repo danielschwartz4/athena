@@ -31,6 +31,7 @@ import com.amazonaws.athena.connector.lambda.data.BlockWriter;
 import com.amazonaws.athena.connector.lambda.data.SchemaBuilder;
 import com.amazonaws.athena.connector.lambda.domain.Split;
 import com.amazonaws.athena.connector.lambda.domain.TableName;
+import com.amazonaws.athena.connector.lambda.domain.spill.SpillLocation;
 import com.amazonaws.athena.connector.lambda.handlers.GlueMetadataHandler;
 import com.amazonaws.athena.connector.lambda.metadata.GetSplitsRequest;
 import com.amazonaws.athena.connector.lambda.metadata.GetSplitsResponse;
@@ -48,9 +49,13 @@ import com.amazonaws.services.glue.model.Database;
 import com.amazonaws.services.glue.model.Table;
 import com.amazonaws.services.secretsmanager.AWSSecretsManager;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 import org.apache.arrow.util.VisibleForTesting;
+import org.apache.arrow.vector.FieldVector;
+import org.apache.arrow.vector.complex.reader.FieldReader;
+import org.apache.arrow.vector.types.pojo.Field;
 import org.apache.arrow.vector.types.pojo.Schema;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -102,8 +107,6 @@ public class EFSMetadataHandler
                 throw new RuntimeException(e);
             }
         }
-        System.out.println("SCHEMAAS");
-        System.out.println(combinedSchemas);
         combinedSchemas.add(DEFAULT_SCHEMA);
         return new ListSchemasResponse(request.getCatalogName(), combinedSchemas);
     }
@@ -190,24 +193,25 @@ public class EFSMetadataHandler
         String catalogName = request.getCatalogName();
         Set<Split> splits = new HashSet();
         Block partitions = request.getPartitions();
+        List<FieldReader> fieldReaders = partitions.getFieldReaders();
         System.out.println("SPLITS PARTITIONS: " + partitions);
-//        Added this
-        Map<String, String> partitionMetadata = partitions.getMetaData();
-        System.out.println("SPLITS partitionMetadata: " + partitionMetadata);
 
-        System.out.println("SPLITS fieldReader(day): " + partitions.getFieldReader("day").);
-
-        Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
-        if (partitions.toString() != "{}") {
-            System.out.println("in splits condition");
-            Split split = splitBuilder.build();
-            Map<String, String> p = split.getProperties();
-            System.out.println("properties: " + p);
-            System.out.println("property values: " + p.values());
-
-            splits.add(split);
+        for (FieldReader locationReader : fieldReaders) {
+            int rowCount = partitions.getRowCount();
+            for (int i = 0; i < rowCount; i++) {
+                Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
+                locationReader.setPosition(i);
+                String fieldName = locationReader.getField().getName();
+                int val = locationReader.readInteger();
+                System.out.println("fieldName: " + fieldName);
+                System.out.println("val: " + val);
+                splitBuilder.add(fieldName, String.valueOf(val));
+                Split split = splitBuilder.build();
+                System.out.println("split: " + split);
+                splits.add(split);
+            }
         }
-
+        System.out.println("splits2: " + splits);
 
         logger.info("doGetSplits: exit - " + splits.size());
         return new GetSplitsResponse(catalogName, splits);

@@ -77,19 +77,19 @@ class EFSTypeUtils
 
         switch (fieldType) {
             case VARCHAR:
-                return makeVarCharExtractor(field);
+                return makeVarCharExtractor(field, index);
             case BIGINT:
                 return makeBigIntExtractor(field);
             case INT:
                 return this.makeIntExtractor(field, index);
             case SMALLINT:
-                return makeSmallIntExtractor(field);
+                return makeSmallIntExtractor(field, index);
             case TINYINT:
                 return makeTinyIntExtractor(field);
             case FLOAT8:
-                return makeFloat8Extractor(field);
+                return makeFloat8Extractor(field, index);
             case FLOAT4:
-                return makeFloat4Extractor(field);
+                return makeFloat4Extractor(field, index);
             case DATEMILLI:
                 return makeDateMilliExtractor(field);
             case BIT:
@@ -105,23 +105,28 @@ class EFSTypeUtils
      * @param field is used to determine which extractor to generate based on the field type.
      * @return a field extractor.
      */
-    private Extractor makeVarCharExtractor(Field field)
+    private Extractor makeVarCharExtractor(Field field, int index)
     {
         return (VarCharExtractor) (Object context, NullableVarCharHolder dst) ->
         {
-            Object fieldValue = ((Map) context).get(field.getName());
+//            Object fieldValue = ((Map) context).get(field.getName());
+//            dst.isSet = 1;
+//            if (fieldValue instanceof String) {
+//                dst.value = (String) fieldValue;
+//            }
+//            else if (fieldValue instanceof List) {
+//                Object value = ((List) fieldValue).get(0);
+//                if (value instanceof String) {
+//                    dst.value = (String) value;
+//                }
+//                else {
+//                    dst.isSet = 0;
+//                }
+//            }
+            String fieldValue = String.valueOf(((String[]) context)[index]);
             dst.isSet = 1;
             if (fieldValue instanceof String) {
-                dst.value = (String) fieldValue;
-            }
-            else if (fieldValue instanceof List) {
-                Object value = ((List) fieldValue).get(0);
-                if (value instanceof String) {
-                    dst.value = (String) value;
-                }
-                else {
-                    dst.isSet = 0;
-                }
+                dst.value = fieldValue;
             }
             else {
                 dst.isSet = 0;
@@ -236,17 +241,6 @@ class EFSTypeUtils
             }
         };
     }
-//    private Extractor makeIntExtractor(Field field, int index) {
-//        return (context, dst) -> {
-//            Integer fieldValue = Integer.parseInt(((String[]) context)[index]);
-//            dst.isSet = 1;
-//            if (fieldValue instanceof Number) {
-//                dst.value = fieldValue;
-//            } else {
-//                dst.isSet = 0;
-//            }
-//        };
-//    }
 
     /**
      * Create an SMALLINT field extractor to extract a short value from a Document. The Document value can be returned
@@ -254,29 +248,34 @@ class EFSTypeUtils
      * @param field is used to determine which extractor to generate based on the field type.
      * @return a field extractor.
      */
-    private Extractor makeSmallIntExtractor(Field field)
+    private Extractor makeSmallIntExtractor(Field field, int index)
     {
         return (SmallIntExtractor) (Object context, NullableSmallIntHolder dst) ->
         {
-            Object fieldValue = ((Map) context).get(field.getName());
+//            Object fieldValue = ((Map) context).get(field.getName());
+//            dst.isSet = 1;
+//            if (fieldValue instanceof Number) {
+//                dst.value = ((Number) fieldValue).shortValue();
+//            }
+//            else if (fieldValue instanceof String) {
+//                dst.value = new Double((String) fieldValue).shortValue();
+//            }
+//            else if (fieldValue instanceof List) {
+//                Object value = ((List) fieldValue).get(0);
+//                if (value instanceof Number) {
+//                    dst.value = ((Number) value).shortValue();
+//                }
+//                else if (value instanceof String) {
+//                    dst.value = new Double((String) value).shortValue();
+//                }
+//                else {
+//                    dst.isSet = 0;
+//                }
+//            }
+            Short fieldValue = Short.valueOf(((String[]) context)[index]);
             dst.isSet = 1;
             if (fieldValue instanceof Number) {
                 dst.value = ((Number) fieldValue).shortValue();
-            }
-            else if (fieldValue instanceof String) {
-                dst.value = new Double((String) fieldValue).shortValue();
-            }
-            else if (fieldValue instanceof List) {
-                Object value = ((List) fieldValue).get(0);
-                if (value instanceof Number) {
-                    dst.value = ((Number) value).shortValue();
-                }
-                else if (value instanceof String) {
-                    dst.value = new Double((String) value).shortValue();
-                }
-                else {
-                    dst.isSet = 0;
-                }
             }
             else {
                 dst.isSet = 0;
@@ -326,29 +325,34 @@ class EFSTypeUtils
      * @param field is used to determine which extractor to generate based on the field type.
      * @return a field extractor.
      */
-    private Extractor makeFloat8Extractor(Field field)
+    private Extractor makeFloat8Extractor(Field field, int index)
     {
         return (Float8Extractor) (Object context, NullableFloat8Holder dst) ->
         {
-            Object fieldValue = ((Map) context).get(field.getName());
+//            Object fieldValue = ((Map) context).get(field.getName());
+//            dst.isSet = 1;
+//            if (fieldValue instanceof Number) {
+//                dst.value = ((Number) fieldValue).doubleValue();
+//            }
+//            else if (fieldValue instanceof String) {
+//                dst.value = new Double((String) fieldValue);
+//            }
+//            else if (fieldValue instanceof List) {
+//                Object value = ((List) fieldValue).get(0);
+//                if (value instanceof Number) {
+//                    dst.value = ((Number) value).doubleValue();
+//                }
+//                else if (value instanceof String) {
+//                    dst.value = new Double((String) value);
+//                }
+//                else {
+//                    dst.isSet = 0;
+//                }
+//            }
+            Float fieldValue = Float.parseFloat(((String[]) context)[index]);
             dst.isSet = 1;
             if (fieldValue instanceof Number) {
                 dst.value = ((Number) fieldValue).doubleValue();
-            }
-            else if (fieldValue instanceof String) {
-                dst.value = new Double((String) fieldValue);
-            }
-            else if (fieldValue instanceof List) {
-                Object value = ((List) fieldValue).get(0);
-                if (value instanceof Number) {
-                    dst.value = ((Number) value).doubleValue();
-                }
-                else if (value instanceof String) {
-                    dst.value = new Double((String) value);
-                }
-                else {
-                    dst.isSet = 0;
-                }
             }
             else {
                 dst.isSet = 0;
@@ -362,29 +366,34 @@ class EFSTypeUtils
      * @param field is used to determine which extractor to generate based on the field type.
      * @return a field extractor.
      */
-    private Extractor makeFloat4Extractor(Field field)
+    private Extractor makeFloat4Extractor(Field field, int index)
     {
         return (Float4Extractor) (Object context, NullableFloat4Holder dst) ->
         {
-            Object fieldValue = ((Map) context).get(field.getName());
+//            Object fieldValue = ((Map) context).get(field.getName());
+//            dst.isSet = 1;
+//            if (fieldValue instanceof Number) {
+//                dst.value = ((Number) fieldValue).floatValue();
+//            }
+//            else if (fieldValue instanceof String) {
+//                dst.value = new Float((String) fieldValue);
+//            }
+//            else if (fieldValue instanceof List) {
+//                Object value = ((List) fieldValue).get(0);
+//                if (value instanceof Number) {
+//                    dst.value = ((Number) value).floatValue();
+//                }
+//                else if (value instanceof String) {
+//                    dst.value = new Float((String) value);
+//                }
+//                else {
+//                    dst.isSet = 0;
+//                }
+//            }
+            Float fieldValue = Float.parseFloat(((String[]) context)[index]);
             dst.isSet = 1;
             if (fieldValue instanceof Number) {
                 dst.value = ((Number) fieldValue).floatValue();
-            }
-            else if (fieldValue instanceof String) {
-                dst.value = new Float((String) fieldValue);
-            }
-            else if (fieldValue instanceof List) {
-                Object value = ((List) fieldValue).get(0);
-                if (value instanceof Number) {
-                    dst.value = ((Number) value).floatValue();
-                }
-                else if (value instanceof String) {
-                    dst.value = new Float((String) value);
-                }
-                else {
-                    dst.isSet = 0;
-                }
             }
             else {
                 dst.isSet = 0;

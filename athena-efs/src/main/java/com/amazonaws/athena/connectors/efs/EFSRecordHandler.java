@@ -72,18 +72,22 @@ public class EFSRecordHandler extends RecordHandler {
     @Override
     protected void readWithConstraint(BlockSpiller spiller, ReadRecordsRequest recordsRequest, QueryStatusChecker queryStatusChecker) throws IOException {
         Split split = recordsRequest.getSplit();
-        System.out.println("SPLIT IN readWithConstraint");
-        System.out.println(split);
         Charset charset = StandardCharsets.UTF_8;
         Path tablePath = Paths.get(System.getenv("EFS_PATH") + "/" + System.getenv("INPUT_TABLE"));
         GeneratedRowWriter.RowWriterBuilder builder = GeneratedRowWriter.newBuilder(recordsRequest.getConstraints());
-        Map<String, String> partitionValues = recordsRequest.getSplit().getProperties();
+        Map<String, String> partitionValues = split.getProperties();
         System.out.println("partitionValues in readWithConstraint");
         System.out.println(partitionValues);
+        System.out.println(partitionValues.values());
+        System.out.println(partitionValues.get("day"));
+        System.out.println(partitionValues.entrySet());
+        System.out.println(partitionValues.keySet());
+
         int index = 0;
 
-        for(Iterator var10 = recordsRequest.getSchema().getFields().iterator(); var10.hasNext(); ++index) {
-            Field next = (Field)var10.next();
+        for(Iterator itr = recordsRequest.getSchema().getFields().iterator(); itr.hasNext(); ++index) {
+            Field next = (Field) itr.next();
+            System.out.println("NEXT: " + next);
             Extractor extractor = typeUtils.makeExtractor(next, index);
 
             if (extractor != null) {
@@ -98,13 +102,12 @@ public class EFSRecordHandler extends RecordHandler {
 
         GeneratedRowWriter rowWriter = builder.build();
         Iterator dirIter = directories.iterator();
+        String table = System.getenv("INPUT_TABLE");
 
         while(dirIter.hasNext()) {
             Object dir = dirIter.next();
-            String d = dir.toString();
-            String e = System.getenv("INPUT_TABLE");
             String tmpDirPathString;
-            if (Objects.equals(dir.toString(), System.getenv("INPUT_TABLE"))) {
+            if (Objects.equals(dir.toString(), table)) {
                 continue;
             } else {
                 tmpDirPathString = "" + tablePath + "/" + dir;
@@ -126,15 +129,11 @@ public class EFSRecordHandler extends RecordHandler {
                 String line;
                 while((line = bufferedReader.readLine()) != null) {
                     String[] lineParts = line.split(",");
-                    System.out.println("LINEPARTS");
-                    System.out.println(lineParts[0] + " " +  lineParts[1] + " " +  lineParts[2]);
-
                     spiller.writeRows((block, rowNum) -> {
                         return rowWriter.writeRow(block, rowNum, lineParts) ? 1 : 0;
                     });
                 }
             }
         }
-
     }
 }
