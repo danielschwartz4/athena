@@ -210,11 +210,7 @@ public class EFSMetadataHandler
                 Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
                 locationReader.setPosition(i);
                 String fieldName = locationReader.getField().getName();
-//                Types
-
                 String val = valueReaderTypes.convertType(locationReader);
-//                int val = locationReader.readInteger();
-
                 splitBuilder.add(fieldName, val);
                 Split split = splitBuilder.build();
                 splits.add(split);

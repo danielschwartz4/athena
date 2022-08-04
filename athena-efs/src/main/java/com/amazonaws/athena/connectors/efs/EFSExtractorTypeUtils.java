@@ -74,13 +74,13 @@ class EFSExtractorTypeUtils
             case VARCHAR:
                 return makeVarCharExtractor(field, index);
             case BIGINT:
-                return makeBigIntExtractor(field);
+                return makeBigIntExtractor(field, index);
             case INT:
                 return this.makeIntExtractor(field, index);
             case SMALLINT:
                 return makeSmallIntExtractor(field, index);
             case TINYINT:
-                return makeTinyIntExtractor(field);
+                return makeTinyIntExtractor(field, index);
             case FLOAT8:
                 return makeFloat8Extractor(field, index);
             case FLOAT4:
@@ -88,7 +88,7 @@ class EFSExtractorTypeUtils
             case DATEMILLI:
                 return makeDateMilliExtractor(field);
             case BIT:
-                return makeBitExtractor(field);
+                return makeBitExtractor(field, index);
             default:
                 return null;
         }
@@ -104,20 +104,6 @@ class EFSExtractorTypeUtils
     {
         return (VarCharExtractor) (Object context, NullableVarCharHolder dst) ->
         {
-//            Object fieldValue = ((Map) context).get(field.getName());
-//            dst.isSet = 1;
-//            if (fieldValue instanceof String) {
-//                dst.value = (String) fieldValue;
-//            }
-//            else if (fieldValue instanceof List) {
-//                Object value = ((List) fieldValue).get(0);
-//                if (value instanceof String) {
-//                    dst.value = (String) value;
-//                }
-//                else {
-//                    dst.isSet = 0;
-//                }
-//            }
             String fieldValue = String.valueOf(((String[]) context)[index]);
             dst.isSet = 1;
             if (fieldValue instanceof String) {
@@ -128,18 +114,6 @@ class EFSExtractorTypeUtils
             }
         };
     }
-//    private Extractor makeVarCharExtractor(Field field, int index) {
-//        return (context, dst) -> {
-//            String fieldValue = String.valueOf(((String[]) context)[index]);
-//            dst.isSet = 1;
-//            if (fieldValue instanceof String) {
-//                dst.value = fieldValue;
-//            } else {
-//                dst.isSet = 0;
-//            }
-//
-//        };
-//    }
 
     /**
      * Create a BIGINT field extractor to extract a long value from a Document. The Document value can be returned
@@ -148,51 +122,14 @@ class EFSExtractorTypeUtils
      * @param field is used to determine which extractor to generate based on the field type.
      * @return a field extractor.
      */
-    private Extractor makeBigIntExtractor(Field field)
+    private Extractor makeBigIntExtractor(Field field, int index)
     {
         return (BigIntExtractor) (Object context, NullableBigIntHolder dst) ->
         {
-            Object fieldValue = ((Map) context).get(field.getName());
+            Integer fieldValue = Integer.parseInt(((String[]) context)[index]);
             dst.isSet = 1;
-            if (!field.getMetadata().isEmpty() && field.getMetadata().containsKey("scaling_factor")) {
-                // scaled_float w/scaling_factor - a float represented as a long.
-                double scalingFactor = new Double(field.getMetadata().get("scaling_factor"));
-                if (fieldValue instanceof Number) {
-                    dst.value =  Math.round(((Number) fieldValue).doubleValue() * scalingFactor);
-                }
-                else if (fieldValue instanceof String) {
-                    dst.value = Math.round(new Double((String) fieldValue) * scalingFactor);
-                }
-                else if (fieldValue instanceof List) {
-                    Object value = ((List) fieldValue).get(0);
-                    if (value instanceof Number) {
-                        dst.value =  Math.round(((Number) value).doubleValue() * scalingFactor);
-                    }
-                    else if (value instanceof String) {
-                        dst.value = Math.round(new Double((String) value) * scalingFactor);
-                    }
-                    else {
-                        dst.isSet = 0;
-                    }
-                }
-            }
-            else if (fieldValue instanceof Number) {
-                dst.value = ((Number) fieldValue).longValue();
-            }
-            else if (fieldValue instanceof String) {
-                dst.value = new Double((String) fieldValue).longValue();
-            }
-            else if (fieldValue instanceof List) {
-                Object value = ((List) fieldValue).get(0);
-                if (value instanceof Number) {
-                    dst.value = ((Number) value).longValue();
-                }
-                else if (value instanceof String) {
-                    dst.value = new Double((String) value).longValue();
-                }
-                else {
-                    dst.isSet = 0;
-                }
+            if (fieldValue instanceof Number) {
+                dst.value = ((Number) fieldValue).intValue();
             }
             else {
                 dst.isSet = 0;
@@ -216,21 +153,6 @@ class EFSExtractorTypeUtils
             if (fieldValue instanceof Number) {
                 dst.value = ((Number) fieldValue).intValue();
             }
-//            else if (fieldValue instanceof String) {
-//                dst.value = new Double((String) fieldValue).intValue();
-//            }
-//            else if (fieldValue instanceof List) {
-//                Object value = ((List) fieldValue).get(0);
-//                if (value instanceof Number) {
-//                    dst.value = ((Number) value).intValue();
-//                }
-//                else if (value instanceof String) {
-//                    dst.value = new Double((String) value).intValue();
-//                }
-//                else {
-//                    dst.isSet = 0;
-//                }
-//            }
             else {
                 dst.isSet = 0;
             }
@@ -247,26 +169,6 @@ class EFSExtractorTypeUtils
     {
         return (SmallIntExtractor) (Object context, NullableSmallIntHolder dst) ->
         {
-//            Object fieldValue = ((Map) context).get(field.getName());
-//            dst.isSet = 1;
-//            if (fieldValue instanceof Number) {
-//                dst.value = ((Number) fieldValue).shortValue();
-//            }
-//            else if (fieldValue instanceof String) {
-//                dst.value = new Double((String) fieldValue).shortValue();
-//            }
-//            else if (fieldValue instanceof List) {
-//                Object value = ((List) fieldValue).get(0);
-//                if (value instanceof Number) {
-//                    dst.value = ((Number) value).shortValue();
-//                }
-//                else if (value instanceof String) {
-//                    dst.value = new Double((String) value).shortValue();
-//                }
-//                else {
-//                    dst.isSet = 0;
-//                }
-//            }
             Short fieldValue = Short.valueOf(((String[]) context)[index]);
             dst.isSet = 1;
             if (fieldValue instanceof Number) {
@@ -284,29 +186,14 @@ class EFSExtractorTypeUtils
      * @param field is used to determine which extractor to generate based on the field type.
      * @return a field extractor.
      */
-    private Extractor makeTinyIntExtractor(Field field)
+    private Extractor makeTinyIntExtractor(Field field, int index)
     {
         return (TinyIntExtractor) (Object context, NullableTinyIntHolder dst) ->
         {
-            Object fieldValue = ((Map) context).get(field.getName());
+            Short fieldValue = Short.valueOf(((String[]) context)[index]);
             dst.isSet = 1;
             if (fieldValue instanceof Number) {
                 dst.value = ((Number) fieldValue).byteValue();
-            }
-            else if (fieldValue instanceof String) {
-                dst.value = new Double((String) fieldValue).byteValue();
-            }
-            else if (fieldValue instanceof List) {
-                Object value = ((List) fieldValue).get(0);
-                if (value instanceof Number) {
-                    dst.value = ((Number) value).byteValue();
-                }
-                else if (value instanceof String) {
-                    dst.value = new Double((String) value).byteValue();
-                }
-                else {
-                    dst.isSet = 0;
-                }
             }
             else {
                 dst.isSet = 0;
@@ -324,26 +211,6 @@ class EFSExtractorTypeUtils
     {
         return (Float8Extractor) (Object context, NullableFloat8Holder dst) ->
         {
-//            Object fieldValue = ((Map) context).get(field.getName());
-//            dst.isSet = 1;
-//            if (fieldValue instanceof Number) {
-//                dst.value = ((Number) fieldValue).doubleValue();
-//            }
-//            else if (fieldValue instanceof String) {
-//                dst.value = new Double((String) fieldValue);
-//            }
-//            else if (fieldValue instanceof List) {
-//                Object value = ((List) fieldValue).get(0);
-//                if (value instanceof Number) {
-//                    dst.value = ((Number) value).doubleValue();
-//                }
-//                else if (value instanceof String) {
-//                    dst.value = new Double((String) value);
-//                }
-//                else {
-//                    dst.isSet = 0;
-//                }
-//            }
             Float fieldValue = Float.parseFloat(((String[]) context)[index]);
             dst.isSet = 1;
             if (fieldValue instanceof Number) {
@@ -365,26 +232,6 @@ class EFSExtractorTypeUtils
     {
         return (Float4Extractor) (Object context, NullableFloat4Holder dst) ->
         {
-//            Object fieldValue = ((Map) context).get(field.getName());
-//            dst.isSet = 1;
-//            if (fieldValue instanceof Number) {
-//                dst.value = ((Number) fieldValue).floatValue();
-//            }
-//            else if (fieldValue instanceof String) {
-//                dst.value = new Float((String) fieldValue);
-//            }
-//            else if (fieldValue instanceof List) {
-//                Object value = ((List) fieldValue).get(0);
-//                if (value instanceof Number) {
-//                    dst.value = ((Number) value).floatValue();
-//                }
-//                else if (value instanceof String) {
-//                    dst.value = new Float((String) value);
-//                }
-//                else {
-//                    dst.isSet = 0;
-//                }
-//            }
             Float fieldValue = Float.parseFloat(((String[]) context)[index]);
             dst.isSet = 1;
             if (fieldValue instanceof Number) {
@@ -487,33 +334,15 @@ class EFSExtractorTypeUtils
      * @param field is used to determine which extractor to generate based on the field type.
      * @return a field extractor.
      */
-    private Extractor makeBitExtractor(Field field)
+    private Extractor makeBitExtractor(Field field, int index)
     {
         return (BitExtractor) (Object context, NullableBitHolder dst) ->
         {
-            Object fieldValue = ((Map) context).get(field.getName());
+            Boolean fieldValue = Boolean.parseBoolean(((String[]) context)[index]);
             dst.isSet = 1;
             if (fieldValue instanceof Boolean) {
                 boolean booleanValue = (Boolean) fieldValue;
                 dst.value = booleanValue ? 1 : 0;
-            }
-            else if (fieldValue instanceof String) {
-                boolean booleanValue = new Boolean((String) fieldValue);
-                dst.value = booleanValue ? 1 : 0;
-            }
-            else if (fieldValue instanceof List) {
-                Object value = ((List) fieldValue).get(0);
-                if (value instanceof Boolean) {
-                    boolean booleanValue = (Boolean) value;
-                    dst.value = booleanValue ? 1 : 0;
-                }
-                else if (value instanceof String) {
-                    boolean booleanValue = new Boolean((String) value);
-                    dst.value = booleanValue ? 1 : 0;
-                }
-                else {
-                    dst.isSet = 0;
-                }
             }
             else {
                 dst.isSet = 0;
