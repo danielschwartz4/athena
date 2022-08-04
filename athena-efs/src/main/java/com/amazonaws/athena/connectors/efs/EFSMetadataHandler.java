@@ -181,9 +181,13 @@ public class EFSMetadataHandler
         System.out.println("partitionCols: " + partitionCols);
         Set<String> directories = efsPathUtils.getDirectories();
         System.out.println("directories: " + directories);
-        Path tablePath = Paths.get(System.getenv("EFS_PATH")
-                + "/" + System.getenv("INPUT_TABLE"));
-        efsPathUtils.getDirectoriesDFS(tablePath.toFile().listFiles());
+        Set<String> resPaths = new HashSet();
+        String d = System.getenv("EFS_PATH")
+                + "/" + System.getenv("INPUT_TABLE");
+        Path tablePath = Paths.get(d);
+
+        efsPathUtils.getDirectoriesDFS(tablePath.toFile().listFiles(), "", resPaths);
+        System.out.println(resPaths);
 
         for (String dir : directories) {
             if (Objects.equals(dir, System.getenv("INPUT_TABLE"))) {
