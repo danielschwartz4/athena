@@ -19,6 +19,7 @@
  */
 package com.amazonaws.athena.connectors.efs;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,7 +32,6 @@ public class EFSPathUtils {
     private final Path tablePath = Paths.get(System.getenv("EFS_PATH")
             + "/" + System.getenv("INPUT_TABLE"));
 
-
     protected Set<String> getDirectories() throws IOException {
         Set<String> directories = Files.walk(tablePath).filter(dir -> Files.isDirectory(dir))
 //                .filter(dir -> !Objects.equals(dir.toString(), System.getenv("INPUT_TABLE")))
@@ -40,5 +40,18 @@ public class EFSPathUtils {
                 .collect(Collectors.toSet());
 
         return directories;
+    }
+    protected void getDirectoriesDFS(File[] files) throws IOException {
+        for (File filename : files) {
+            if (filename.isDirectory()) {
+                System.out.println("Directory: "
+                        + filename.getName());
+                getDirectoriesDFS(filename.listFiles());
+            }
+            else {
+                System.out.println("File: "
+                        + filename.getName());
+            }
+        }
     }
 }

@@ -52,6 +52,8 @@ import com.amazonaws.services.glue.model.Table;
 import com.amazonaws.services.secretsmanager.AWSSecretsManager;
 
 import java.lang.reflect.Array;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 
 import org.apache.arrow.util.VisibleForTesting;
@@ -176,7 +178,13 @@ public class EFSMetadataHandler
             tableName = request.getTableName().getTableName();
         }
         Set<String> partitionCols = request.getPartitionCols();
+        System.out.println("partitionCols: " + partitionCols);
         Set<String> directories = efsPathUtils.getDirectories();
+        System.out.println("directories: " + directories);
+        Path tablePath = Paths.get(System.getenv("EFS_PATH")
+                + "/" + System.getenv("INPUT_TABLE"));
+        efsPathUtils.getDirectoriesDFS(tablePath.toFile().listFiles());
+
         for (String dir : directories) {
             if (Objects.equals(dir, System.getenv("INPUT_TABLE"))) {
                 continue;
@@ -202,10 +210,14 @@ public class EFSMetadataHandler
         String catalogName = request.getCatalogName();
         Set<Split> splits = new HashSet();
         Block partitions = request.getPartitions();
+        System.out.println("Partitions: " + partitions);
         List<FieldReader> fieldReaders = partitions.getFieldReaders();
+        System.out.println("field readers: " + fieldReaders);
+        System.out.println("row count: " + partitions.getRowCount());
+        int rowCount = partitions.getRowCount();
 
         for (FieldReader locationReader : fieldReaders) {
-            int rowCount = partitions.getRowCount();
+            System.out.println("locationReader.getField: " + locationReader.getField());
             for (int i = 0; i < rowCount; i++) {
                 Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
                 locationReader.setPosition(i);
@@ -216,7 +228,6 @@ public class EFSMetadataHandler
                 splits.add(split);
             }
         }
-
         logger.info("doGetSplits: exit - " + splits.size());
         return new GetSplitsResponse(catalogName, splits);
     }

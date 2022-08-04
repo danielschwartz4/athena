@@ -75,17 +75,17 @@ public class EFSRecordHandler extends RecordHandler {
         Charset charset = StandardCharsets.UTF_8;
         GeneratedRowWriter.RowWriterBuilder builder = GeneratedRowWriter.newBuilder(recordsRequest.getConstraints());
         Map<String, String> partitionValues = split.getProperties();
+        System.out.println("partitionValues.entrySet().toArray: "
+                + partitionValues.entrySet().toArray());
 
         Path path = Paths.get(System.getenv("EFS_PATH") + "/"
                 + System.getenv("INPUT_TABLE")
                 + "/" + partitionValues.entrySet().toArray()[0]);
 
-
         int index = 0;
 
         for(Iterator itr = recordsRequest.getSchema().getFields().iterator(); itr.hasNext(); ++index) {
             Field next = (Field) itr.next();
-            System.out.println("NEXT: " + next);
             Extractor extractor = typeUtils.makeExtractor(next, index);
 
             if (extractor != null) {
