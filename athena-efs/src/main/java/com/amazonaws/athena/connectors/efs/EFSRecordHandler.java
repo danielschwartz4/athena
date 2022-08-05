@@ -94,7 +94,6 @@ public class EFSRecordHandler extends RecordHandler {
         for(Iterator itr = recordsRequest.getSchema().getFields().iterator(); itr.hasNext(); ++index) {
             Field next = (Field) itr.next();
             Extractor extractor = typeUtils.makeExtractor(next, index);
-
             if (extractor != null) {
                 builder.withExtractor(next.getName(), extractor);
             }
@@ -108,26 +107,11 @@ public class EFSRecordHandler extends RecordHandler {
                 if (!p.isEmpty()) {
                     String tmpDirPathString = pathString + p;
                     Path tmpDirPath = Paths.get(tmpDirPathString);
-//                    Set<String> files = Files.walk(tmpDirPath).filter(file -> !Files.isDirectory(file))
-//                            .map(Path::getFileName)
-//                            .map(Path::toString)
-//                            .collect(Collectors.toSet());
-//                    for (String file : files) {
-//                        Path tmpFilePath = Paths.get(tmpDirPath + "/" + file);
-//                        writeRows(spiller, tmpFilePath, rowWriter);
-//                    }
+
                     writeRows(spiller, tmpDirPath, rowWriter);
                 }
             }
         } else {
-//            Set<String> files = Files.walk(path).filter(file -> !Files.isDirectory(file))
-//                    .map(Path::getFileName)
-//                    .map(Path::toString)
-//                    .collect(Collectors.toSet());
-//            for (String file : files) {
-//                Path tmpFilePath = Paths.get(path + "/" + file);
-//                writeRows(spiller, tmpFilePath, rowWriter);
-//            }
             writeRows(spiller, path, rowWriter);
         }
     }
@@ -147,26 +131,6 @@ public class EFSRecordHandler extends RecordHandler {
             }
             return rowWriter;
         }
-//        Charset charset = StandardCharsets.UTF_8;
-//        BufferedReader bufferedReader = Files.newBufferedReader(filePath, charset);
-//        String line;
-//        while ((line = bufferedReader.readLine()) != null) {
-//            String[] lineParts = line.split(",");
-//            spiller.writeRows((block, rowNum) -> rowWriter.writeRow(block, rowNum, lineParts) ? 1 : 0);
-//        }
-//        return rowWriter;
-
-
-//    private GeneratedRowWriter writeRows(BlockSpiller spiller, Path filePath, GeneratedRowWriter rowWriter) throws IOException {
-//        Charset charset = StandardCharsets.UTF_8;
-//        BufferedReader bufferedReader = Files.newBufferedReader(filePath, charset);
-//        String line;
-//        while ((line = bufferedReader.readLine()) != null) {
-//            String[] lineParts = line.split(",");
-//            spiller.writeRows((block, rowNum) -> rowWriter.writeRow(block, rowNum, lineParts) ? 1 : 0);
-//        }
-//        return rowWriter;
-//    }
         return rowWriter;
     }
 }
