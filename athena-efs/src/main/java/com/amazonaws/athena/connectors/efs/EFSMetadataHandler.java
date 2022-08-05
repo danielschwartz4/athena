@@ -192,21 +192,21 @@ public class EFSMetadataHandler
         for (String path : resPaths) {
             if (!path.isEmpty()) {
                 String[] dirs = path.split("/");
-                for (String dir : dirs) {
-                    if (!dir.isEmpty()) {
-                        String[] dirParts = dir.split("=");
-                        String col = dirParts[0];
+                blockWriter.writeRows((Block block, int row) -> {
+                    boolean matched = true;
+                    for (String dir : dirs) {
+                        if (!dir.isEmpty()) {
+                            String[] dirParts = dir.split("=");
+                            String col = dirParts[0];
 //                  Do for all types
-                        int val = Integer.parseInt(dirParts[1]);
-                        blockWriter.writeRows((Block block, int row) -> {
-                            boolean matched = true;
+                            int val = Integer.parseInt(dirParts[1]);
                             if (partitionCols.contains(col)) {
                                 matched &= block.setValue(col, row, val);
                             }
-                            return matched ? 1 : 0;
-                        });
+                        }
                     }
-                }
+                    return matched ? 1 : 0;
+                });
             }
         }
 
