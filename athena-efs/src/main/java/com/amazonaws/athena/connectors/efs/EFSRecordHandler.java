@@ -56,10 +56,12 @@ public class EFSRecordHandler extends RecordHandler {
     private static final String SOURCE_TYPE = "efs";
     private EFSExtractorTypeUtils typeUtils;
     private AmazonS3 amazonS3;
+    private EFSPathUtils efsPathUtils;
 
     public EFSRecordHandler() {
         this(AmazonS3ClientBuilder.defaultClient(), AWSSecretsManagerClientBuilder.defaultClient(), AmazonAthenaClientBuilder.defaultClient());
         this.typeUtils = new EFSExtractorTypeUtils();
+        this.efsPathUtils = new EFSPathUtils();
     }
 
     @VisibleForTesting
@@ -67,6 +69,7 @@ public class EFSRecordHandler extends RecordHandler {
         super(amazonS3, secretsManager, amazonAthena, "efs");
         this.amazonS3 = amazonS3;
         this.typeUtils = new EFSExtractorTypeUtils();
+        this.efsPathUtils = new EFSPathUtils();
     }
 
     @Override
@@ -98,39 +101,47 @@ public class EFSRecordHandler extends RecordHandler {
             }
         }
 
-        Set<String> directories = Files.walk(path).filter(dir -> Files.isDirectory(dir))
-                .map(Path::getFileName)
-                .map(Path::toString)
-                .collect(Collectors.toSet());
-
-        System.out.println("DIRECTORIES: " + directories);
-
+        Set<String> resPaths = new HashSet();
+        efsPathUtils.getDirectoriesDFS(path.toFile().listFiles(), "", resPaths);
+        System.out.println("HELLOOOOO");
+        System.out.println("RESPATHS: " + resPaths);
         GeneratedRowWriter rowWriter = builder.build();
-
-        for (String dir : directories) {
-            System.out.println("DIR: " + dir);
-            String tmpDirPathString;
-            String[] tmpArr = pathString.split("/");
-            String curr = tmpArr[tmpArr.length-1];
-            System.out.println("CURR: " + curr);
-            if (Objects.equals(dir.toString(), curr)) {
-                continue;
-            } else {
-                tmpDirPathString = "" + path + "/" + dir;
+        if (!resPaths.isEmpty()) {
+            for (String p : resPaths) {
+                if (!p.isEmpty()) {
+                    String tmpDirPathString = pathString + p;
+                    Path tmpDirPath = Paths.get(tmpDirPathString);
+                    System.out.println("tmpDirPath: " + tmpDirPath);
+                    Set<String> files = Files.walk(tmpDirPath).filter(file -> !Files.isDirectory(file))
+                            .map(Path::getFileName)
+                            .map(Path::toString)
+                            .collect(Collectors.toSet());
+                    System.out.println("files: " + files);
+                    for (String file : files) {
+                        System.out.println("tmpDirPath2: " + tmpDirPath);
+                        Path tmpFilePath = Paths.get(tmpDirPath + "/" + file);
+                        System.out.println("tmpFilePath: " + tmpFilePath);
+                        BufferedReader bufferedReader = Files.newBufferedReader(tmpFilePath, charset);
+                        String line;
+                        while ((line = bufferedReader.readLine()) != null) {
+                            String[] lineParts = line.split(",");
+                            spiller.writeRows((block, rowNum) -> {
+                                return rowWriter.writeRow(block, rowNum, lineParts) ? 1 : 0;
+                            });
+                        }
+                    }
+                }
             }
-
-            Path tmpDirPath = Paths.get(tmpDirPathString);
-            Set<String> files = Files.walk(tmpDirPath).filter(file -> !Files.isDirectory(file))
+        } else {
+            Set<String> files = Files.walk(path).filter(file -> !Files.isDirectory(file))
                     .map(Path::getFileName)
                     .map(Path::toString)
                     .collect(Collectors.toSet());
-
             for (String file : files) {
-                Path tmpFilePath = Paths.get("/" + tmpDirPathString + "/" + file.toString());
+                Path tmpFilePath = Paths.get(path + "/" + file);
                 BufferedReader bufferedReader = Files.newBufferedReader(tmpFilePath, charset);
-
                 String line;
-                while((line = bufferedReader.readLine()) != null) {
+                while ((line = bufferedReader.readLine()) != null) {
                     String[] lineParts = line.split(",");
                     spiller.writeRows((block, rowNum) -> {
                         return rowWriter.writeRow(block, rowNum, lineParts) ? 1 : 0;

@@ -102,6 +102,7 @@ public class EFSMetadataHandler
         super(glueClient, keyFactory, awsSecretsManager, athena, SOURCE_TYPE, spillBucket, spillPrefix);
         this.glueClient = glueClient;
         this.valueReaderTypes = new EFSValueReaderTypes();
+        this.efsPathUtils = new EFSPathUtils();
     }
 
     @Override
@@ -179,16 +180,13 @@ public class EFSMetadataHandler
             tableName = request.getTableName().getTableName();
         }
         Set<String> partitionCols = request.getPartitionCols();
-        System.out.println("partitionCols: " + partitionCols);
         Set<String> directories = efsPathUtils.getDirectories();
-        System.out.println("directories: " + directories);
         Set<String> resPaths = new HashSet();
         String d = System.getenv("EFS_PATH")
                 + "/" + System.getenv("INPUT_TABLE");
         Path tablePath = Paths.get(d);
 
         efsPathUtils.getDirectoriesDFS(tablePath.toFile().listFiles(), "", resPaths);
-        System.out.println(resPaths);
 
         for (String path : resPaths) {
             if (!path.isEmpty()) {
@@ -210,24 +208,6 @@ public class EFSMetadataHandler
                 });
             }
         }
-
-//        for (String dir : directories) {
-//            if (Objects.equals(dir, System.getenv("INPUT_TABLE"))) {
-//                continue;
-//            } else {
-//                String[] dirParts = dir.split("=");
-//                String col = dirParts[0];
-////              Get type from fields in the future
-//                int val = Integer.parseInt(dirParts[1]);
-//                blockWriter.writeRows((Block block, int row) -> {
-//                    boolean matched = true;
-//                    if (partitionCols.contains(col)) {
-//                        matched &= block.setValue(col, row, val);
-//                    }
-//                    return matched ? 1 : 0;
-//                });
-//            }
-//        }
     }
 
     @Override
@@ -236,9 +216,7 @@ public class EFSMetadataHandler
         String catalogName = request.getCatalogName();
         Set<Split> splits = new HashSet();
         Block partitions = request.getPartitions();
-        System.out.println("Partitions: " + partitions);
         List<FieldReader> fieldReaders = partitions.getFieldReaders();
-        System.out.println("row count: " + partitions.getRowCount());
         int rowCount = partitions.getRowCount();
 
         for (int i = 0; i < rowCount; i++) {
@@ -256,7 +234,6 @@ public class EFSMetadataHandler
             splits.add(split);
         }
 
-        System.out.println("splits: " + splits);
         logger.info("doGetSplits: exit - " + splits.size());
         return new GetSplitsResponse(catalogName, splits);
     }
