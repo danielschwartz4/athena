@@ -51,6 +51,7 @@ import com.amazonaws.services.glue.model.Database;
 import com.amazonaws.services.glue.model.Table;
 import com.amazonaws.services.secretsmanager.AWSSecretsManager;
 
+import java.awt.desktop.SystemEventListener;
 import java.lang.reflect.Array;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -247,9 +248,8 @@ public class EFSMetadataHandler
                 locationReader.setPosition(i);
                 String fieldName = locationReader.getField().getName();
                 String val = valueReaderTypes.convertType(locationReader);
-                System.out.println("fieldName: " + fieldName);
-                System.out.println("val: " + val);
-                if (val != null) {
+
+                if (!Objects.equals(val, "null")) {
                     splitBuilder.add(fieldName, val);
                     split = splitBuilder.build();
                 }

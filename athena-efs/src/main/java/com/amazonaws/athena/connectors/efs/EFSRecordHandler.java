@@ -75,11 +75,17 @@ public class EFSRecordHandler extends RecordHandler {
         Charset charset = StandardCharsets.UTF_8;
         GeneratedRowWriter.RowWriterBuilder builder = GeneratedRowWriter.newBuilder(recordsRequest.getConstraints());
         Map<String, String> partitionValues = split.getProperties();
-        System.out.println(partitionValues);
 
-        Path path = Paths.get(System.getenv("EFS_PATH") + "/"
-                + System.getenv("INPUT_TABLE")
-                + "/" + partitionValues.entrySet().toArray()[0]);
+        Object[] partitionArr = partitionValues.entrySet().toArray();
+        int arrSize = partitionArr.length;
+        String pathString = System.getenv("EFS_PATH") + "/"
+                + System.getenv("INPUT_TABLE");
+
+        for (int i = arrSize-1; i >= 0; i--) {
+            pathString += "/" + partitionArr[i];
+        }
+        System.out.println("pathString: " + pathString);
+        Path path = Paths.get(pathString);
 
         int index = 0;
 
@@ -97,19 +103,21 @@ public class EFSRecordHandler extends RecordHandler {
                 .map(Path::toString)
                 .collect(Collectors.toSet());
 
+        System.out.println("DIRECTORIES: " + directories);
+
         GeneratedRowWriter rowWriter = builder.build();
         Iterator dirIter = directories.iterator();
         String table = System.getenv("INPUT_TABLE");
 
         while(dirIter.hasNext()) {
             Object dir = dirIter.next();
+            System.out.println("DIR: " + dir);
             String tmpDirPathString;
             if (Objects.equals(dir.toString(), table)) {
                 continue;
             } else {
-//                tmpDirPathString = "" + tablePath + "/" + dir;
-                tmpDirPathString = "" + path + "/" ;
-
+                tmpDirPathString = "" + path + "/" + dir;
+//                tmpDirPathString = "" + path + "/" ;
             }
 
             Path tmpDirPath = Paths.get(tmpDirPathString);
