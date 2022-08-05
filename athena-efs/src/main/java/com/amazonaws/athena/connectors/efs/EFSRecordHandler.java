@@ -91,10 +91,8 @@ public class EFSRecordHandler extends RecordHandler {
 
         int index = 0;
 
-        System.out.println("Extractor: " +  recordsRequest.getSchema().getFields());
         for(Iterator itr = recordsRequest.getSchema().getFields().iterator(); itr.hasNext(); ++index) {
             Field next = (Field) itr.next();
-            System.out.println(next.getName());
             Extractor extractor = typeUtils.makeExtractor(next, index);
 
             if (extractor != null) {
@@ -105,34 +103,26 @@ public class EFSRecordHandler extends RecordHandler {
         GeneratedRowWriter rowWriter = builder.build();
         Set<String> resPaths = new HashSet();
         efsPathUtils.getDirectoriesDFS(path.toFile().listFiles(), "", resPaths);
-        System.out.println("RESPATHS: " + resPaths);
         if (!resPaths.isEmpty()) {
             for (String p : resPaths) {
                 if (!p.isEmpty()) {
                     String tmpDirPathString = pathString + p;
                     Path tmpDirPath = Paths.get(tmpDirPathString);
-                    System.out.println("tmpDirPath: " + tmpDirPath);
                     Set<String> files = Files.walk(tmpDirPath).filter(file -> !Files.isDirectory(file))
                             .map(Path::getFileName)
                             .map(Path::toString)
                             .collect(Collectors.toSet());
-                    System.out.println("files: " + files);
                     for (String file : files) {
-                        System.out.println("tmpDirPath2: " + tmpDirPath);
                         Path tmpFilePath = Paths.get(tmpDirPath + "/" + file);
-                        System.out.println("tmpFilePath: " + tmpFilePath);
                         writeRows(spiller, tmpFilePath, rowWriter);
                     }
                 }
             }
         } else {
-            System.out.println("IN ELSE");
-            System.out.println(path);
             Set<String> files = Files.walk(path).filter(file -> !Files.isDirectory(file))
                     .map(Path::getFileName)
                     .map(Path::toString)
                     .collect(Collectors.toSet());
-            System.out.println(files);
             for (String file : files) {
                 Path tmpFilePath = Paths.get(path + "/" + file);
                 writeRows(spiller, tmpFilePath, rowWriter);
