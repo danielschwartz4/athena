@@ -237,22 +237,42 @@ public class EFSMetadataHandler
         Block partitions = request.getPartitions();
         System.out.println("Partitions: " + partitions);
         List<FieldReader> fieldReaders = partitions.getFieldReaders();
-        System.out.println("field readers: " + fieldReaders);
         System.out.println("row count: " + partitions.getRowCount());
         int rowCount = partitions.getRowCount();
 
-        for (FieldReader locationReader : fieldReaders) {
-            System.out.println("locationReader.getField: " + locationReader.getField());
-            for (int i = 0; i < rowCount; i++) {
-                Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
+        for (int i = 0; i < rowCount; i++) {
+            Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
+            Split split = null;
+            for (FieldReader locationReader : fieldReaders) {
                 locationReader.setPosition(i);
                 String fieldName = locationReader.getField().getName();
                 String val = valueReaderTypes.convertType(locationReader);
-                splitBuilder.add(fieldName, val);
-                Split split = splitBuilder.build();
-                splits.add(split);
+                System.out.println("fieldName: " + fieldName);
+                System.out.println("val: " + val);
+                if (val != null) {
+                    splitBuilder.add(fieldName, val);
+                    split = splitBuilder.build();
+                }
             }
+            splits.add(split);
         }
+
+//        for (FieldReader locationReader : fieldReaders) {
+//            System.out.println("locationReader.getField: " + locationReader.getField());
+//            for (int i = 0; i < rowCount; i++) {
+//                System.out.println("in loop: " + i);
+//                Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
+//                locationReader.setPosition(i);
+//                String fieldName = locationReader.getField().getName();
+//                String val = valueReaderTypes.convertType(locationReader);
+//                System.out.println("fieldName: " + fieldName);
+//                System.out.println("val: " + val);
+//                splitBuilder.add(fieldName, val);
+//                Split split = splitBuilder.build();
+//                splits.add(split);
+//            }
+//        }
+        System.out.println("splits: " + splits);
         logger.info("doGetSplits: exit - " + splits.size());
         return new GetSplitsResponse(catalogName, splits);
     }
