@@ -75,7 +75,7 @@ public class EFSRecordHandler extends RecordHandler {
     @Override
     protected void readWithConstraint(BlockSpiller spiller, ReadRecordsRequest recordsRequest, QueryStatusChecker queryStatusChecker) throws IOException {
         Split split = recordsRequest.getSplit();
-        Charset charset = StandardCharsets.UTF_8;
+//        Charset charset = StandardCharsets.UTF_8;
         GeneratedRowWriter.RowWriterBuilder builder = GeneratedRowWriter.newBuilder(recordsRequest.getConstraints());
         Map<String, String> partitionValues = split.getProperties();
 
@@ -105,7 +105,7 @@ public class EFSRecordHandler extends RecordHandler {
         efsPathUtils.getDirectoriesDFS(path.toFile().listFiles(), "", resPaths);
         System.out.println("HELLOOOOO");
         System.out.println("RESPATHS: " + resPaths);
-        GeneratedRowWriter rowWriter = builder.build();
+//        GeneratedRowWriter rowWriter = builder.build();
         if (!resPaths.isEmpty()) {
             for (String p : resPaths) {
                 if (!p.isEmpty()) {
@@ -121,14 +121,7 @@ public class EFSRecordHandler extends RecordHandler {
                         System.out.println("tmpDirPath2: " + tmpDirPath);
                         Path tmpFilePath = Paths.get(tmpDirPath + "/" + file);
                         System.out.println("tmpFilePath: " + tmpFilePath);
-                        BufferedReader bufferedReader = Files.newBufferedReader(tmpFilePath, charset);
-                        String line;
-                        while ((line = bufferedReader.readLine()) != null) {
-                            String[] lineParts = line.split(",");
-                            spiller.writeRows((block, rowNum) -> {
-                                return rowWriter.writeRow(block, rowNum, lineParts) ? 1 : 0;
-                            });
-                        }
+                        writeRows(spiller, tmpFilePath, builder);
                     }
                 }
             }
@@ -139,15 +132,20 @@ public class EFSRecordHandler extends RecordHandler {
                     .collect(Collectors.toSet());
             for (String file : files) {
                 Path tmpFilePath = Paths.get(path + "/" + file);
-                BufferedReader bufferedReader = Files.newBufferedReader(tmpFilePath, charset);
-                String line;
-                while ((line = bufferedReader.readLine()) != null) {
-                    String[] lineParts = line.split(",");
-                    spiller.writeRows((block, rowNum) -> {
-                        return rowWriter.writeRow(block, rowNum, lineParts) ? 1 : 0;
-                    });
-                }
+                writeRows(spiller, tmpFilePath, builder);
             }
         }
+    }
+
+    private GeneratedRowWriter writeRows(BlockSpiller spiller, Path filePath, GeneratedRowWriter.RowWriterBuilder builder) throws IOException {
+        Charset charset = StandardCharsets.UTF_8;
+        BufferedReader bufferedReader = Files.newBufferedReader(filePath, charset);
+        GeneratedRowWriter rowWriter = builder.build();
+        String line;
+        while ((line = bufferedReader.readLine()) != null) {
+            String[] lineParts = line.split(",");
+            spiller.writeRows((block, rowNum) -> rowWriter.writeRow(block, rowNum, lineParts) ? 1 : 0);
+        }
+        return rowWriter;
     }
 }
