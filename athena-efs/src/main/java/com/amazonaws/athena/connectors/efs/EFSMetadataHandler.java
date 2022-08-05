@@ -180,7 +180,6 @@ public class EFSMetadataHandler
             tableName = request.getTableName().getTableName();
         }
         Set<String> partitionCols = request.getPartitionCols();
-        Set<String> directories = efsPathUtils.getDirectories();
         Set<String> resPaths = new HashSet();
         String d = System.getenv("EFS_PATH")
                 + "/" + System.getenv("INPUT_TABLE");

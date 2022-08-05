@@ -55,7 +55,9 @@ public class EFSPathUtils {
                 System.out.println("File: " + filename.getName());
             }
         }
-        resFiles.add(tmpFile);
+        if (tmpFile != "") {
+            resFiles.add(tmpFile);
+        }
         try {
             int index = this.tmpPath.lastIndexOf("/");
             this.tmpPath = this.tmpPath.substring(0, index);
