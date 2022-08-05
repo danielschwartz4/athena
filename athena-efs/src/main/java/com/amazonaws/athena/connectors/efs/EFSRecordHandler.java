@@ -113,7 +113,10 @@ public class EFSRecordHandler extends RecordHandler {
             Object dir = dirIter.next();
             System.out.println("DIR: " + dir);
             String tmpDirPathString;
-            if (Objects.equals(dir.toString(), table)) {
+            String[] tmpArr = pathString.split("/");
+            String curr = tmpArr[tmpArr.length-1];
+            System.out.println("CURR: " + curr);
+            if (Objects.equals(dir.toString(), curr)) {
                 continue;
             } else {
                 tmpDirPathString = "" + path + "/" + dir;
