@@ -189,23 +189,44 @@ public class EFSMetadataHandler
         efsPathUtils.getDirectoriesDFS(tablePath.toFile().listFiles(), "", resPaths);
         System.out.println(resPaths);
 
-        for (String dir : directories) {
-            if (Objects.equals(dir, System.getenv("INPUT_TABLE"))) {
-                continue;
-            } else {
-                String[] dirParts = dir.split("=");
-                String col = dirParts[0];
-//              Get type from fields in the future
-                int val = Integer.parseInt(dirParts[1]);
-                blockWriter.writeRows((Block block, int row) -> {
-                    boolean matched = true;
-                    if (partitionCols.contains(col)) {
-                        matched &= block.setValue(col, row, val);
+        for (String path : resPaths) {
+            if (!path.isEmpty()) {
+                String[] dirs = path.split("/");
+                for (String dir : dirs) {
+                    if (!dir.isEmpty()) {
+                        String[] dirParts = dir.split("=");
+                        String col = dirParts[0];
+//                  Do for all types
+                        int val = Integer.parseInt(dirParts[1]);
+                        blockWriter.writeRows((Block block, int row) -> {
+                            boolean matched = true;
+                            if (partitionCols.contains(col)) {
+                                matched &= block.setValue(col, row, val);
+                            }
+                            return matched ? 1 : 0;
+                        });
                     }
-                    return matched ? 1 : 0;
-                });
+                }
             }
         }
+
+//        for (String dir : directories) {
+//            if (Objects.equals(dir, System.getenv("INPUT_TABLE"))) {
+//                continue;
+//            } else {
+//                String[] dirParts = dir.split("=");
+//                String col = dirParts[0];
+////              Get type from fields in the future
+//                int val = Integer.parseInt(dirParts[1]);
+//                blockWriter.writeRows((Block block, int row) -> {
+//                    boolean matched = true;
+//                    if (partitionCols.contains(col)) {
+//                        matched &= block.setValue(col, row, val);
+//                    }
+//                    return matched ? 1 : 0;
+//                });
+//            }
+//        }
     }
 
     @Override

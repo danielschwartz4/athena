@@ -75,8 +75,7 @@ public class EFSRecordHandler extends RecordHandler {
         Charset charset = StandardCharsets.UTF_8;
         GeneratedRowWriter.RowWriterBuilder builder = GeneratedRowWriter.newBuilder(recordsRequest.getConstraints());
         Map<String, String> partitionValues = split.getProperties();
-        System.out.println("partitionValues.entrySet().toArray: "
-                + partitionValues.entrySet().toArray());
+        System.out.println(partitionValues);
 
         Path path = Paths.get(System.getenv("EFS_PATH") + "/"
                 + System.getenv("INPUT_TABLE")
