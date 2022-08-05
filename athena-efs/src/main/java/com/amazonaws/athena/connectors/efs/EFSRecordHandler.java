@@ -106,11 +106,8 @@ public class EFSRecordHandler extends RecordHandler {
         System.out.println("DIRECTORIES: " + directories);
 
         GeneratedRowWriter rowWriter = builder.build();
-        Iterator dirIter = directories.iterator();
-        String table = System.getenv("INPUT_TABLE");
 
-        while(dirIter.hasNext()) {
-            Object dir = dirIter.next();
+        for (String dir : directories) {
             System.out.println("DIR: " + dir);
             String tmpDirPathString;
             String[] tmpArr = pathString.split("/");
@@ -120,7 +117,6 @@ public class EFSRecordHandler extends RecordHandler {
                 continue;
             } else {
                 tmpDirPathString = "" + path + "/" + dir;
-//                tmpDirPathString = "" + path + "/" ;
             }
 
             Path tmpDirPath = Paths.get(tmpDirPathString);
@@ -129,10 +125,7 @@ public class EFSRecordHandler extends RecordHandler {
                     .map(Path::toString)
                     .collect(Collectors.toSet());
 
-            Iterator fileIter = files.iterator();
-
-            while(fileIter.hasNext()) {
-                Object file = fileIter.next();
+            for (String file : files) {
                 Path tmpFilePath = Paths.get("/" + tmpDirPathString + "/" + file.toString());
                 BufferedReader bufferedReader = Files.newBufferedReader(tmpFilePath, charset);
 

@@ -39,7 +39,6 @@ public class EFSPathUtils {
 
     protected Set<String> getDirectories() throws IOException {
         Set<String> directories = Files.walk(tablePath).filter(dir -> Files.isDirectory(dir))
-//                .filter(dir -> !Objects.equals(dir.toString(), System.getenv("INPUT_TABLE")))
                 .map(Path::getFileName)
                 .map(Path::toString)
                 .collect(Collectors.toSet());
