@@ -79,7 +79,7 @@ public class EFSMetadataHandler
     private final AWSGlue glueClient;
     public static final String DEFAULT_SCHEMA = "default";
     private EFSPathUtils efsPathUtils;
-
+    private EFSTypeUtils typeUtils;
     private EFSValueReaderTypes valueReaderTypes;
 
     public EFSMetadataHandler()
@@ -88,6 +88,7 @@ public class EFSMetadataHandler
         this.glueClient = getAwsGlue();
         this.efsPathUtils = new EFSPathUtils();
         this.valueReaderTypes = new EFSValueReaderTypes();
+        this.typeUtils = new EFSTypeUtils();
     }
 
 
@@ -103,6 +104,7 @@ public class EFSMetadataHandler
         this.glueClient = glueClient;
         this.valueReaderTypes = new EFSValueReaderTypes();
         this.efsPathUtils = new EFSPathUtils();
+        this.typeUtils = new EFSTypeUtils();
     }
 
     @Override
@@ -175,10 +177,6 @@ public class EFSMetadataHandler
 
     @Override
     public void getPartitions(BlockWriter blockWriter, GetTableLayoutRequest request, QueryStatusChecker queryStatusChecker) throws Exception {
-        String tableName = getSourceTableName(request.getSchema());
-        if (tableName == null) {
-            tableName = request.getTableName().getTableName();
-        }
         Set<String> partitionCols = request.getPartitionCols();
         Set<String> resPaths = new HashSet();
         String d = System.getenv("EFS_PATH")
@@ -197,7 +195,15 @@ public class EFSMetadataHandler
                             String[] dirParts = dir.split("=");
                             String col = dirParts[0];
 //                  Do for all types
-                            int val = Integer.parseInt(dirParts[1]);
+                            System.out.println("HEREHERE");
+//                            int val = Integer.parseInt(dirParts[1]);
+//                            Object val = Integer.parseInt(dirParts[1]);
+                            Object val = typeUtils.typeParser(
+                                    block.getFieldReader(col).getField(),
+                                    dirParts[1]);
+                            System.out.println("col: " + col);
+                            System.out.println("val: " + val);
+
                             if (partitionCols.contains(col)) {
                                 matched &= block.setValue(col, row, val);
                             }
@@ -225,6 +231,9 @@ public class EFSMetadataHandler
                 locationReader.setPosition(i);
                 String fieldName = locationReader.getField().getName();
                 String val = valueReaderTypes.convertType(locationReader);
+                System.out.println("TYPE: " + locationReader.getMinorType());
+
+//                String val = String.valueOf(locationReader.readText().toString());
                 if (!Objects.equals(val, "null")) {
                     splitBuilder.add(fieldName, val);
                     split = splitBuilder.build();

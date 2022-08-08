@@ -54,13 +54,13 @@ import org.slf4j.LoggerFactory;
 public class EFSRecordHandler extends RecordHandler {
     private static final Logger logger = LoggerFactory.getLogger(EFSRecordHandler.class);
     private static final String SOURCE_TYPE = "efs";
-    private EFSExtractorTypeUtils typeUtils;
+    private EFSTypeUtils typeUtils;
     private AmazonS3 amazonS3;
     private EFSPathUtils efsPathUtils;
 
     public EFSRecordHandler() {
         this(AmazonS3ClientBuilder.defaultClient(), AWSSecretsManagerClientBuilder.defaultClient(), AmazonAthenaClientBuilder.defaultClient());
-        this.typeUtils = new EFSExtractorTypeUtils();
+        this.typeUtils = new EFSTypeUtils();
         this.efsPathUtils = new EFSPathUtils();
     }
 
@@ -68,7 +68,7 @@ public class EFSRecordHandler extends RecordHandler {
     protected EFSRecordHandler(AmazonS3 amazonS3, AWSSecretsManager secretsManager, AmazonAthena amazonAthena) {
         super(amazonS3, secretsManager, amazonAthena, "efs");
         this.amazonS3 = amazonS3;
-        this.typeUtils = new EFSExtractorTypeUtils();
+        this.typeUtils = new EFSTypeUtils();
         this.efsPathUtils = new EFSPathUtils();
     }
 

@@ -57,15 +57,16 @@ import java.util.Map;
  * This class has interfaces used for document field-values extraction after they are retrieved from an Elasticsearch
  * instance. This includes field extractors and field writer factories using the field extractor framework.
  */
-class EFSExtractorTypeUtils
+class EFSTypeUtils
 {
-    private static final Logger logger = LoggerFactory.getLogger(EFSExtractorTypeUtils.class);
+    private static final Logger logger = LoggerFactory.getLogger(EFSTypeUtils.class);
 
     /**
      * Create the appropriate field extractor used for extracting field values from a Document based on the field type.
      * @param field is used to determine which extractor to generate based on the field type.
      * @return a field extractor.
      */
+
     protected Extractor makeExtractor(Field field, int index)
     {
         Types.MinorType fieldType = Types.getMinorTypeForArrowType(field.getType());
@@ -385,4 +386,28 @@ class EFSExtractorTypeUtils
 ////                throw new RuntimeException(fieldType + " is not supported");
 ////        }
 //    }
+    protected Object typeParser(Field field, String val)
+    {
+        Types.MinorType fieldType = Types.getMinorTypeForArrowType(field.getType());
+
+        switch (fieldType) {
+            case VARCHAR:
+                return String.valueOf(val);
+            case BIGINT:
+            case INT:
+                return Integer.parseInt(val);
+            case SMALLINT:
+            case TINYINT:
+                return Short.valueOf(val);
+            case FLOAT8:
+            case FLOAT4:
+                return Float.parseFloat(val);
+//            case DATEMILLI:
+//                return dateMilliParser(field);
+            case BIT:
+                return Boolean.parseBoolean(val);
+            default:
+                return null;
+        }
+    }
 }
