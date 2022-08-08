@@ -194,16 +194,9 @@ public class EFSMetadataHandler
                         if (!dir.isEmpty()) {
                             String[] dirParts = dir.split("=");
                             String col = dirParts[0];
-//                  Do for all types
-                            System.out.println("HEREHERE");
-//                            int val = Integer.parseInt(dirParts[1]);
-//                            Object val = Integer.parseInt(dirParts[1]);
                             Object val = typeUtils.typeParser(
                                     block.getFieldReader(col).getField(),
                                     dirParts[1]);
-                            System.out.println("col: " + col);
-                            System.out.println("val: " + val);
-
                             if (partitionCols.contains(col)) {
                                 matched &= block.setValue(col, row, val);
                             }
@@ -231,8 +224,6 @@ public class EFSMetadataHandler
                 locationReader.setPosition(i);
                 String fieldName = locationReader.getField().getName();
                 String val = valueReaderTypes.convertType(locationReader);
-                System.out.println("TYPE: " + locationReader.getMinorType());
-
 //                String val = String.valueOf(locationReader.readText().toString());
                 if (!Objects.equals(val, "null")) {
                     splitBuilder.add(fieldName, val);
