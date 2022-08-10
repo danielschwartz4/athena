@@ -52,6 +52,7 @@ import com.amazonaws.services.glue.model.Table;
 import com.amazonaws.services.secretsmanager.AWSSecretsManager;
 
 import java.awt.desktop.SystemEventListener;
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -179,32 +180,42 @@ public class EFSMetadataHandler
         System.out.println("part cols: " + partitionCols);
 
         efsPathUtils.getDirectoriesDFS(tablePath.toFile().listFiles(), "", resPaths);
+        System.out.println("res paths: " + resPaths);
 
-        for (String path : resPaths) {
-            if (!path.isEmpty()) {
-                String[] dirs = path.split("/");
-                blockWriter.writeRows((Block block, int row) -> {
-                    boolean matched = true;
-                    for (String dir : dirs) {
-                        if (!dir.isEmpty() && dir.contains("=")) {
-                            String[] dirParts = dir.split("=");
-                            String col = dirParts[0];
-                            Object val = typeUtils.typeParser(
-                                    block.getFieldReader(col).getField(),
-                                    dirParts[1]);
-                            if (partitionCols.contains(col)) {
-                                matched &= block.setValue(col, row, val);
+        if (!partitionCols.isEmpty()) {
+            for (String path : resPaths) {
+                if (!path.isEmpty()) {
+                    String[] dirs = path.split("/");
+                    blockWriter.writeRows((Block block, int row) -> {
+                        boolean matched = true;
+                        for (String dir : dirs) {
+                            if (!dir.isEmpty() && dir.contains("=")) {
+                                String[] dirParts = dir.split("=");
+                                String col = dirParts[0];
+                                Object val = typeUtils.typeParser(
+                                        block.getFieldReader(col).getField(),
+                                        dirParts[1]);
+                                if (partitionCols.contains(col)) {
+                                    matched &= block.setValue(col, row, val);
+                                }
                             }
                         }
-                    }
-                    return matched ? 1 : 0;
-                });
+                        return matched ? 1 : 0;
+                    });
+                }
             }
+        } else {
+            blockWriter.writeRows((Block block, int row) -> {
+                boolean matched = true;
+                matched &= block.setValue("day", row, 1);
+                return matched ? 1 : 0;
+            });
         }
+
     }
 
     @Override
-    public GetSplitsResponse doGetSplits(BlockAllocator allocator, GetSplitsRequest request) {
+    public GetSplitsResponse doGetSplits(BlockAllocator allocator, GetSplitsRequest request) throws IOException {
         logger.info("doGetSplits: enter - " + request);
         String catalogName = request.getCatalogName();
         Set<Split> splits = new HashSet();
@@ -212,27 +223,47 @@ public class EFSMetadataHandler
         List<FieldReader> fieldReaders = partitions.getFieldReaders();
         int rowCount = partitions.getRowCount();
 
-        for (int i = 0; i < rowCount; i++) {
+        Object[] partitionArr = partitions.getFieldReaders().toArray(new FieldReader[0]);
+
+        System.out.println("partitionArr: " + partitionArr);
+        int arrSize = partitionArr.length;
+        String pathString = System.getenv("EFS_PATH") + "/"
+                + System.getenv("INPUT_TABLE");
+
+//        for (int i = arrSize-1; i >= 0; i--) {
+//            pathString += "/" + partitionArr[i];
+//        }
+//        System.out.println("path string: " + pathString);
+//        Path path = Paths.get(pathString);
+        Set<String> resPaths = new HashSet();
+        efsPathUtils.getDirectoriesDFS(Paths.get(pathString).toFile().listFiles(), "", resPaths);
+
+        int index = 0;
+        for (String p : resPaths) {
             Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
-            Split split = null;
-            for (FieldReader locationReader : fieldReaders) {
-                locationReader.setPosition(i);
-                String fieldName = locationReader.getField().getName();
-                String val = valueReaderTypes.convertType(locationReader);
-                if (!Objects.equals(val, "null")) {
-                    splitBuilder.add(fieldName, val);
-                    split = splitBuilder.build();
-                }
-            }
+            splitBuilder.add(String.valueOf(index), pathString + p);
+            Split split = splitBuilder.build();
             splits.add(split);
         }
+        System.out.println("SPLITS: " + splits);
 
-//        Add root
-//        Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
-//        splitBuilder.add("/", "");
-//        Split split = splitBuilder.build();
-//        splits.add(split);
-//        System.out.println(splits);
+//        for (int i = 0; i < rowCount; i++) {
+//            Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
+//            Split split = null;
+//            for (FieldReader locationReader : fieldReaders) {
+//                locationReader.setPosition(i);
+//                String fieldName = locationReader.getField().getName();
+//                String val = valueReaderTypes.convertType(locationReader);
+//                if (!Objects.equals(val, "null")) {
+//                    splitBuilder.add(fieldName, val);
+//                    split = splitBuilder.build();
+//                }
+//            }
+//            splits.add(split);
+//        }
+        System.out.println("getSplits: " + splits);
+
+
 
         logger.info("doGetSplits: exit - " + splits.size());
         return new GetSplitsResponse(catalogName, splits);

@@ -75,19 +75,25 @@ public class EFSRecordHandler extends RecordHandler {
     @Override
     protected void readWithConstraint(BlockSpiller spiller, ReadRecordsRequest recordsRequest, QueryStatusChecker queryStatusChecker) throws IOException {
         Split split = recordsRequest.getSplit();
+        System.out.println(split.getProperties());
+        String filePath = split.getProperty("0");
+
+        System.out.println("RWC filePath: " + filePath);
+
         GeneratedRowWriter.RowWriterBuilder builder = GeneratedRowWriter.newBuilder(recordsRequest.getConstraints());
 
-        Map<String, String> partitionValues = split.getProperties();
+//        Map<String, String> partitionValues = split.getProperties();
 
-        Object[] partitionArr = partitionValues.entrySet().toArray();
-        int arrSize = partitionArr.length;
-        String pathString = System.getenv("EFS_PATH") + "/"
-                + System.getenv("INPUT_TABLE");
-
-        for (int i = arrSize-1; i >= 0; i--) {
-            pathString += "/" + partitionArr[i];
-        }
-        Path path = Paths.get(pathString);
+//        Object[] partitionArr = partitionValues.entrySet().toArray();
+//        int arrSize = partitionArr.length;
+//        String pathString = System.getenv("EFS_PATH") + "/"
+//                + System.getenv("INPUT_TABLE");
+//
+//        for (int i = arrSize-1; i >= 0; i--) {
+//            pathString += "/" + partitionArr[i];
+//        }
+//        System.out.println("path string: " + pathString);
+//        Path path = Paths.get(pathString);
 
         int index = 0;
 
@@ -100,23 +106,25 @@ public class EFSRecordHandler extends RecordHandler {
         }
 
         GeneratedRowWriter rowWriter = builder.build();
-        Set<String> resPaths = new HashSet();
-        efsPathUtils.getDirectoriesDFS(path.toFile().listFiles(), "", resPaths);
-        if (!resPaths.isEmpty()) {
-            for (String p : resPaths) {
-                if (!p.isEmpty()) {
-                    String tmpDirPathString = pathString + p;
-                    Path tmpDirPath = Paths.get(tmpDirPathString);
 
-                    writeRows(spiller, tmpDirPath, rowWriter);
-                }
-            }
-        } else {
-            writeRows(spiller, path, rowWriter);
-        }
+        writeRows(spiller, Paths.get(filePath), rowWriter);
+
+//        Set<String> resPaths = new HashSet();
+//        efsPathUtils.getDirectoriesDFS(path.toFile().listFiles(), "", resPaths);
+//        if (!resPaths.isEmpty()) {
+//            for (String p : resPaths) {
+//                if (!p.isEmpty()) {
+//                    String tmpDirPathString = pathString + p;
+//                    Path tmpDirPath = Paths.get(tmpDirPathString);
+//
+//                    writeRows(spiller, tmpDirPath, rowWriter);
+//                }
+//            }
+//        } else {
+//            writeRows(spiller, path, rowWriter);
+//        }
     }
     private GeneratedRowWriter writeRows(BlockSpiller spiller, Path filePath, GeneratedRowWriter rowWriter) throws IOException {
-        System.out.println("ROW WRITER file name: " + filePath.getFileName());
         Charset charset = StandardCharsets.UTF_8;
         String line;
         BufferedReader bufferedReader = Files.newBufferedReader(filePath, charset);
