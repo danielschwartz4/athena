@@ -207,42 +207,48 @@ public class EFSMetadataHandler
             }
         } else {
             blockWriter.writeRows((Block block, int row) -> {
-                boolean matched = true;
-                matched &= block.setValue("day", row, 1);
-                return matched ? 1 : 0;
+                System.out.println("HERE");
+                String col = "partitionId";
+                Object val = typeUtils.typeParser(
+                        block.getFieldReader(col).getField(),
+                        "1");
+                System.out.println(col);
+                System.out.println(val);
+                block.setValue(col, row, val);
+                return 1;
             });
         }
-
     }
 
     @Override
     public GetSplitsResponse doGetSplits(BlockAllocator allocator, GetSplitsRequest request) throws IOException {
         logger.info("doGetSplits: enter - " + request);
         String catalogName = request.getCatalogName();
-        Set<Split> splits = new HashSet();
+        Set<Split> splits = new HashSet<>();
         Block partitions = request.getPartitions();
         List<FieldReader> fieldReaders = partitions.getFieldReaders();
         int rowCount = partitions.getRowCount();
 
-        Set<String> partitionSet = new HashSet();
-        for (int i = 0; i < rowCount; i++) {
-            for (FieldReader locationReader : fieldReaders) {
-                locationReader.setPosition(i);
-                String fieldName = locationReader.getField().getName();
-                String val = valueReaderTypes.convertType(locationReader);
-                if (!Objects.equals(val, "null")) {
-                    partitionSet.add(fieldName + "=" + val);
+        Set<String> partitionSet = new HashSet<>();
+
+        if (partitions.getFieldReaders().size() > 1) {
+            for (int i = 0; i < rowCount; i++) {
+                for (FieldReader locationReader : fieldReaders) {
+                    locationReader.setPosition(i);
+                    String fieldName = locationReader.getField().getName();
+                    String val = valueReaderTypes.convertType(locationReader);
+                    if (!Objects.equals(val, "null")) {
+                        partitionSet.add(fieldName + "=" + val);
+                    }
                 }
             }
         }
-        System.out.println("Partition set: " + partitionSet);
 
         String pathString = System.getenv("EFS_PATH") + "/"
                 + System.getenv("INPUT_TABLE");
 
         Set<String> resPaths = new HashSet<>();
-        efsPathUtils.getDirectoriesDFS(Paths.get(pathString).toFile().listFiles(), "", resPaths, partitionSet);
-
+        efsPathUtils.getDirectoriesDFS(Objects.requireNonNull(Paths.get(pathString).toFile().listFiles()), "", resPaths, partitionSet);
 
         int index = 0;
         for (String p : resPaths) {
@@ -251,12 +257,6 @@ public class EFSMetadataHandler
             Split split = splitBuilder.build();
             splits.add(split);
         }
-        System.out.println("SPLITS: " + splits);
-
-
-        System.out.println("getSplits: " + splits);
-
-
 
         logger.info("doGetSplits: exit - " + splits.size());
         return new GetSplitsResponse(catalogName, splits);
