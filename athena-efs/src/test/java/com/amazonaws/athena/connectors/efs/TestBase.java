@@ -41,9 +41,7 @@ public class TestBase {
     protected static final String TEST_TABLE3 = "test_table3";
     protected static final String TEST_TABLE4 = "test_table4";
     protected static final TableName TEST_TABLE_NAME = new TableName(DEFAULT_SCHEMA, TEST_TABLE);
-    protected static final TableName TEST_TABLE_2_NAME = new TableName(DEFAULT_SCHEMA, TEST_TABLE2);
-    protected static final TableName TEST_TABLE_3_NAME = new TableName(DEFAULT_SCHEMA, TEST_TABLE3);
-    protected static final TableName TEST_TABLE_4_NAME = new TableName(DEFAULT_SCHEMA, TEST_TABLE4);
+    protected static final TableName TEST_TABLE_WITH_FIELDS = new TableName(DEFAULT_SCHEMA, TEST_TABLE);
 
 
 //    protected static AmazonElasticFileSystem efsClient;

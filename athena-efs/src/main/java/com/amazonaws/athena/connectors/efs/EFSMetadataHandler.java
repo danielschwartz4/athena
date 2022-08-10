@@ -128,13 +128,10 @@ public class EFSMetadataHandler
 
     @Override
     public ListTablesResponse doListTables(BlockAllocator allocator, ListTablesRequest request) {
-        // LinkedHashSet for consistent ordering
         Set<TableName> combinedTables = new LinkedHashSet<>();
         if (glueClient != null) {
             try {
                 combinedTables.addAll(super.doListTables(allocator, request,
-                        //                        new ListTablesRequest(request.getIdentity(), request.getQueryId(), request.getCatalogName(),
-                        //                                request.getSchemaName(), null, UNLIMITED_PAGE_SIZE_VALUE),
                         TABLE_FILTER).getTables());
             }
             catch (Exception e) {
@@ -166,9 +163,6 @@ public class EFSMetadataHandler
             }
         }
 
-        //        If glue not present, infer schema
-        //        ...
-
         return new GetTableResponse(request.getCatalogName(),
                 request.getTableName(),
                 (schema == null) ? SchemaBuilder.newBuilder().build() : schema,
@@ -182,6 +176,7 @@ public class EFSMetadataHandler
         String d = System.getenv("EFS_PATH")
                 + "/" + System.getenv("INPUT_TABLE");
         Path tablePath = Paths.get(d);
+        System.out.println("part cols: " + partitionCols);
 
         efsPathUtils.getDirectoriesDFS(tablePath.toFile().listFiles(), "", resPaths);
 
@@ -191,7 +186,7 @@ public class EFSMetadataHandler
                 blockWriter.writeRows((Block block, int row) -> {
                     boolean matched = true;
                     for (String dir : dirs) {
-                        if (!dir.isEmpty()) {
+                        if (!dir.isEmpty() && dir.contains("=")) {
                             String[] dirParts = dir.split("=");
                             String col = dirParts[0];
                             Object val = typeUtils.typeParser(
@@ -224,7 +219,6 @@ public class EFSMetadataHandler
                 locationReader.setPosition(i);
                 String fieldName = locationReader.getField().getName();
                 String val = valueReaderTypes.convertType(locationReader);
-//                String val = String.valueOf(locationReader.readText().toString());
                 if (!Objects.equals(val, "null")) {
                     splitBuilder.add(fieldName, val);
                     split = splitBuilder.build();
@@ -232,6 +226,13 @@ public class EFSMetadataHandler
             }
             splits.add(split);
         }
+
+//        Add root
+//        Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
+//        splitBuilder.add("/", "");
+//        Split split = splitBuilder.build();
+//        splits.add(split);
+//        System.out.println(splits);
 
         logger.info("doGetSplits: exit - " + splits.size());
         return new GetSplitsResponse(catalogName, splits);

@@ -42,9 +42,9 @@ public class EFSPathUtils {
                 .map(Path::getFileName)
                 .map(Path::toString)
                 .collect(Collectors.toSet());
-
         return directories;
     }
+
     protected void getDirectoriesDFS(File[] files, String tmpFile, Set<String> resFiles) throws IOException {
         for (File filename : files) {
             if (filename.isDirectory()) {
@@ -52,11 +52,8 @@ public class EFSPathUtils {
                 getDirectoriesDFS(filename.listFiles(), this.tmpPath, resFiles);
             }
             else {
-                System.out.println("File: " + filename.getName());
+                resFiles.add(tmpFile + "/" + filename.getName());
             }
-        }
-        if (tmpFile != "") {
-            resFiles.add(tmpFile);
         }
         try {
             int index = this.tmpPath.lastIndexOf("/");

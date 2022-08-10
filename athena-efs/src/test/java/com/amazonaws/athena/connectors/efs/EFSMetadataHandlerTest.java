@@ -19,13 +19,13 @@
  */
 package com.amazonaws.athena.connectors.efs;
 
+import com.amazonaws.AmazonServiceException;
 import com.amazonaws.athena.connector.lambda.data.BlockAllocator;
 import com.amazonaws.athena.connector.lambda.data.BlockAllocatorImpl;
 import com.amazonaws.athena.connector.lambda.domain.TableName;
+import com.amazonaws.athena.connector.lambda.metadata.*;
+import com.amazonaws.athena.connector.lambda.metadata.GetTableRequest;
 import com.amazonaws.athena.connector.lambda.metadata.ListSchemasRequest;
-import com.amazonaws.athena.connector.lambda.metadata.ListSchemasResponse;
-import com.amazonaws.athena.connector.lambda.metadata.ListTablesRequest;
-import com.amazonaws.athena.connector.lambda.metadata.ListTablesResponse;
 import com.amazonaws.athena.connector.lambda.security.LocalKeyFactory;
 import com.amazonaws.services.athena.AmazonAthena;
 import com.amazonaws.services.glue.AWSGlue;
@@ -140,4 +140,24 @@ public class EFSMetadataHandlerTest
 
         assertThat(new HashSet<>(res.getTables()), equalTo(new HashSet<>(expectedTables)));
     }
+
+    @Test
+    public void doGetTable()
+            throws Exception
+    {
+        when(glueClient.getTable(any())).thenThrow(new AmazonServiceException(""));
+
+        com.amazonaws.athena.connector.lambda.metadata.GetTableRequest req = new GetTableRequest(TEST_IDENTITY, TEST_QUERY_ID, TEST_CATALOG_NAME, TEST_TABLE_NAME);
+        GetTableResponse res = handler.doGetTable(allocator, req);
+
+        logger.info("doGetTable - {}", res.getSchema());
+        System.out.println(res.getTableName().getSchemaName());
+        System.out.println(res.getTableName().getTableName());
+
+        assertThat(res.getTableName().getSchemaName(), equalTo(DEFAULT_SCHEMA));
+        assertThat(res.getTableName().getTableName(), equalTo(TEST_TABLE));
+//        assertThat(res.getSchema().getFields().size(), equalTo(11));
+    }
+
+
 }

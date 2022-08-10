@@ -58,9 +58,6 @@ Parameters:
     Description: One or more Subnet IDs corresponding to the Subnet that the Lambda
       function can use to access you data source. (e.g. subnet1,subnet2)
     Type: List<AWS::EC2::Subnet::Id>
-  InputFile:
-    Description: 'The file that you would like to query from '
-    Type: String
   InputTable:
     Description: 'The table that you would like to query from '
     Type: String

@@ -116,20 +116,13 @@ public class EFSRecordHandler extends RecordHandler {
         }
     }
     private GeneratedRowWriter writeRows(BlockSpiller spiller, Path filePath, GeneratedRowWriter rowWriter) throws IOException {
+        System.out.println("ROW WRITER file name: " + filePath.getFileName());
         Charset charset = StandardCharsets.UTF_8;
         String line;
-        Set<String> files = Files.walk(filePath).filter(file -> !Files.isDirectory(file))
-                .map(Path::getFileName)
-                .map(Path::toString)
-                .collect(Collectors.toSet());
-        for (String file : files) {
-            Path tmpFilePath = Paths.get(filePath + "/" + file);
-            BufferedReader bufferedReader = Files.newBufferedReader(tmpFilePath, charset);
-            while ((line = bufferedReader.readLine()) != null) {
-                String[] lineParts = line.split(",");
-                spiller.writeRows((block, rowNum) -> rowWriter.writeRow(block, rowNum, lineParts) ? 1 : 0);
-            }
-            return rowWriter;
+        BufferedReader bufferedReader = Files.newBufferedReader(filePath, charset);
+        while ((line = bufferedReader.readLine()) != null) {
+            String[] lineParts = line.split(",");
+            spiller.writeRows((block, rowNum) -> rowWriter.writeRow(block, rowNum, lineParts) ? 1 : 0);
         }
         return rowWriter;
     }
