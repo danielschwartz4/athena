@@ -45,11 +45,19 @@ public class EFSPathUtils {
         return directories;
     }
 
-    protected void getDirectoriesDFS(File[] files, String tmpFile, Set<String> resFiles) throws IOException {
+    protected void getDirectoriesDFS(File[] files, String tmpFile, Set<String> resFiles,Set<String> partitionSet) throws IOException {
         for (File filename : files) {
             if (filename.isDirectory()) {
-                this.tmpPath += "/" + filename.getName();
-                getDirectoriesDFS(filename.listFiles(), this.tmpPath, resFiles);
+                if (!partitionSet.isEmpty()) {
+                    if (partitionSet.contains(filename.getName())) {
+                        this.tmpPath += "/" + filename.getName();
+                        getDirectoriesDFS(filename.listFiles(), this.tmpPath, resFiles, partitionSet);
+                    }
+                } else {
+                    this.tmpPath += "/" + filename.getName();
+                    getDirectoriesDFS(filename.listFiles(), this.tmpPath, resFiles, partitionSet);
+                }
+
             }
             else {
                 resFiles.add(tmpFile + "/" + filename.getName());

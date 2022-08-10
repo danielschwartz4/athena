@@ -75,7 +75,7 @@ public class EFSRecordHandler extends RecordHandler {
     @Override
     protected void readWithConstraint(BlockSpiller spiller, ReadRecordsRequest recordsRequest, QueryStatusChecker queryStatusChecker) throws IOException {
         Split split = recordsRequest.getSplit();
-        System.out.println(split.getProperties());
+        System.out.println("SPLIT PROPERTIES: " + split.getProperties());
         String filePath = split.getProperty("0");
 
         System.out.println("RWC filePath: " + filePath);

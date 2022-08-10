@@ -177,9 +177,10 @@ public class EFSMetadataHandler
         String d = System.getenv("EFS_PATH")
                 + "/" + System.getenv("INPUT_TABLE");
         Path tablePath = Paths.get(d);
-        System.out.println("part cols: " + partitionCols);
 
-        efsPathUtils.getDirectoriesDFS(tablePath.toFile().listFiles(), "", resPaths);
+        Set<String> partitionSet = new HashSet();
+        System.out.println(partitionSet.isEmpty());
+        efsPathUtils.getDirectoriesDFS(tablePath.toFile().listFiles(), "", resPaths, partitionSet);
         System.out.println("res paths: " + resPaths);
 
         if (!partitionCols.isEmpty()) {
@@ -223,20 +224,25 @@ public class EFSMetadataHandler
         List<FieldReader> fieldReaders = partitions.getFieldReaders();
         int rowCount = partitions.getRowCount();
 
-        Object[] partitionArr = partitions.getFieldReaders().toArray(new FieldReader[0]);
+        Set<String> partitionSet = new HashSet();
+        for (int i = 0; i < rowCount; i++) {
+            for (FieldReader locationReader : fieldReaders) {
+                locationReader.setPosition(i);
+                String fieldName = locationReader.getField().getName();
+                String val = valueReaderTypes.convertType(locationReader);
+                if (!Objects.equals(val, "null")) {
+                    partitionSet.add(fieldName + "=" + val);
+                }
+            }
+        }
+        System.out.println("Partition set: " + partitionSet);
 
-        System.out.println("partitionArr: " + partitionArr);
-        int arrSize = partitionArr.length;
         String pathString = System.getenv("EFS_PATH") + "/"
                 + System.getenv("INPUT_TABLE");
 
-//        for (int i = arrSize-1; i >= 0; i--) {
-//            pathString += "/" + partitionArr[i];
-//        }
-//        System.out.println("path string: " + pathString);
-//        Path path = Paths.get(pathString);
-        Set<String> resPaths = new HashSet();
-        efsPathUtils.getDirectoriesDFS(Paths.get(pathString).toFile().listFiles(), "", resPaths);
+        Set<String> resPaths = new HashSet<>();
+        efsPathUtils.getDirectoriesDFS(Paths.get(pathString).toFile().listFiles(), "", resPaths, partitionSet);
+
 
         int index = 0;
         for (String p : resPaths) {
@@ -247,20 +253,7 @@ public class EFSMetadataHandler
         }
         System.out.println("SPLITS: " + splits);
 
-//        for (int i = 0; i < rowCount; i++) {
-//            Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
-//            Split split = null;
-//            for (FieldReader locationReader : fieldReaders) {
-//                locationReader.setPosition(i);
-//                String fieldName = locationReader.getField().getName();
-//                String val = valueReaderTypes.convertType(locationReader);
-//                if (!Objects.equals(val, "null")) {
-//                    splitBuilder.add(fieldName, val);
-//                    split = splitBuilder.build();
-//                }
-//            }
-//            splits.add(split);
-//        }
+
         System.out.println("getSplits: " + splits);
 
 
