@@ -181,6 +181,7 @@ public class EFSMetadataHandler
         Set<String> partitionSet = new HashSet();
         efsPathUtils.getDirectoriesDFS(tablePath.toFile().listFiles(), "", resPaths, partitionSet);
 
+//      If there are partitions, we need to set the block with the partition field and value
         if (!partitionCols.isEmpty()) {
             for (String path : resPaths) {
                 if (!path.isEmpty()) {
@@ -245,7 +246,7 @@ public class EFSMetadataHandler
         String pathString = System.getenv("EFS_PATH") + "/"
                 + System.getenv("INPUT_TABLE");
 
-//      Get all file paths that belong to the partition set from above. If there no partitions, we just get all files
+//      Get all file paths that belong to the partition set from above. If there are no partitions, we just get all files
         Set<String> resPaths = new HashSet<>();
         efsPathUtils.getDirectoriesDFS(Objects.requireNonNull(Paths.get(pathString).toFile().listFiles()), "", resPaths, partitionSet);
 
