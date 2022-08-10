@@ -75,28 +75,14 @@ public class EFSRecordHandler extends RecordHandler {
     @Override
     protected void readWithConstraint(BlockSpiller spiller, ReadRecordsRequest recordsRequest, QueryStatusChecker queryStatusChecker) throws IOException {
         Split split = recordsRequest.getSplit();
-        System.out.println("SPLIT PROPERTIES: " + split.getProperties());
-        String filePath = split.getProperty("0");
 
-        System.out.println("RWC filePath: " + filePath);
+//      Each split is a map <index, filePath>, so we just get the 0th property now since there's one file per split
+        String filePath = split.getProperty("0");
 
         GeneratedRowWriter.RowWriterBuilder builder = GeneratedRowWriter.newBuilder(recordsRequest.getConstraints());
 
-//        Map<String, String> partitionValues = split.getProperties();
-
-//        Object[] partitionArr = partitionValues.entrySet().toArray();
-//        int arrSize = partitionArr.length;
-//        String pathString = System.getenv("EFS_PATH") + "/"
-//                + System.getenv("INPUT_TABLE");
-//
-//        for (int i = arrSize-1; i >= 0; i--) {
-//            pathString += "/" + partitionArr[i];
-//        }
-//        System.out.println("path string: " + pathString);
-//        Path path = Paths.get(pathString);
-
+//      Extract fields
         int index = 0;
-
         for(Iterator itr = recordsRequest.getSchema().getFields().iterator(); itr.hasNext(); ++index) {
             Field next = (Field) itr.next();
             Extractor extractor = typeUtils.makeExtractor(next, index);
@@ -106,24 +92,10 @@ public class EFSRecordHandler extends RecordHandler {
         }
 
         GeneratedRowWriter rowWriter = builder.build();
-
         writeRows(spiller, Paths.get(filePath), rowWriter);
 
-//        Set<String> resPaths = new HashSet();
-//        efsPathUtils.getDirectoriesDFS(path.toFile().listFiles(), "", resPaths);
-//        if (!resPaths.isEmpty()) {
-//            for (String p : resPaths) {
-//                if (!p.isEmpty()) {
-//                    String tmpDirPathString = pathString + p;
-//                    Path tmpDirPath = Paths.get(tmpDirPathString);
-//
-//                    writeRows(spiller, tmpDirPath, rowWriter);
-//                }
-//            }
-//        } else {
-//            writeRows(spiller, path, rowWriter);
-//        }
     }
+
     private GeneratedRowWriter writeRows(BlockSpiller spiller, Path filePath, GeneratedRowWriter rowWriter) throws IOException {
         Charset charset = StandardCharsets.UTF_8;
         String line;

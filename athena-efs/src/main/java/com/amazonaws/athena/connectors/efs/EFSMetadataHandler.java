@@ -179,9 +179,7 @@ public class EFSMetadataHandler
         Path tablePath = Paths.get(d);
 
         Set<String> partitionSet = new HashSet();
-        System.out.println(partitionSet.isEmpty());
         efsPathUtils.getDirectoriesDFS(tablePath.toFile().listFiles(), "", resPaths, partitionSet);
-        System.out.println("res paths: " + resPaths);
 
         if (!partitionCols.isEmpty()) {
             for (String path : resPaths) {
@@ -228,9 +226,9 @@ public class EFSMetadataHandler
         Block partitions = request.getPartitions();
         List<FieldReader> fieldReaders = partitions.getFieldReaders();
         int rowCount = partitions.getRowCount();
-
         Set<String> partitionSet = new HashSet<>();
 
+//      Convert partitions from fieldReader format to "col=val" format and put them in a set
         if (partitions.getFieldReaders().size() > 1) {
             for (int i = 0; i < rowCount; i++) {
                 for (FieldReader locationReader : fieldReaders) {
@@ -247,9 +245,11 @@ public class EFSMetadataHandler
         String pathString = System.getenv("EFS_PATH") + "/"
                 + System.getenv("INPUT_TABLE");
 
+//      Get all file paths that belong to the partition set from above. If there no partitions, we just get all files
         Set<String> resPaths = new HashSet<>();
         efsPathUtils.getDirectoriesDFS(Objects.requireNonNull(Paths.get(pathString).toFile().listFiles()), "", resPaths, partitionSet);
 
+//      Make a split for each file
         int index = 0;
         for (String p : resPaths) {
             Split.Builder splitBuilder = Split.newBuilder(this.makeSpillLocation(request), this.makeEncryptionKey());
